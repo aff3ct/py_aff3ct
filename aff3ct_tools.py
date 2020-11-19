@@ -31,7 +31,11 @@ def build_inheritence_tree(data, template, include, exclude, tree):
 				if (template == short_class_inh):
 					tree[key] = {}
 					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
-					break
+				break
+		elif("tool" in template):
+			tree[key] = {}
+			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
+
 	return tree
 
 def compute_tree_str(tree, str, prefix):
@@ -46,12 +50,15 @@ def compute_tree_str(tree, str, prefix):
 def print_tree(tree):
 	print(compute_tree_str(tree, "", ""))
 
-def build_modules(data, tree, template, modules, install_path, path, existing_tools):
+def build_modules(data, tree, base, modules, install_path, path, existing_tools):
 	for key, value in tree.items():
 		class_info   = data[key]
 		short_name   = class_info["class_short_name"]
 		name		 = class_info["class_name"]
-		has_template = class_info["class_nb_templates"] > 0
+		if "class_templates" in class_info.keys():
+			has_template = class_info["class_nb_templates"] > 0
+		else:
+			has_template = False
 		full_template   = ""
 		medium_template = ""
 		short_template  = ""
@@ -59,55 +66,68 @@ def build_modules(data, tree, template, modules, install_path, path, existing_to
 		module_info = {}
 		module_info['name']		 = name
 		module_info['short_name']   = short_name
-		matching = [s for s in class_info['class_inheritence'] if template in s]
-		matching = matching[0]
-		matching = matching.replace("public ", "")
-		matching = matching.split("::")[-1]
-		matching = 'aff3ct::module::' + matching
-		module_info['parent']	   = matching
+		if "class_inheritence" in class_info.keys():
+			matching = [s for s in class_info['class_inheritence'] if base in s]
+			if matching:
+				matching = matching[0]
+				matching = matching.replace("public ", "")
+			module_info['parent']	   = matching
+
 		module_info['has_template'] = has_template
 		module_info['include_path']  = path + '/' + short_name
 		module_info['mk_dir_path']   = install_path + '/' + path + '/' + short_name
 		if has_template:
 			try:
-				full_template, medium_template, short_template = get_templates(class_info)
+				full_template, medium_template, short_template, default_template = get_templates(class_info)
 			except RuntimeError as err:
 				print(err)
 				continue
+			medium_template  = 'template <' + medium_template  + '>'
+			short_template   = '<' + short_template   + '>'
+			default_template = '<' + default_template + '>'
 
-			module_info['template'   ] = {}
-			module_info['template'   ]['full'  ] = full_template
-			module_info['template'   ]['medium'] = medium_template
-			module_info['template'   ]['short' ] = short_template
+		module_info['template'   ] = {}
+		module_info['template'   ]['full'   ] = full_template
+		module_info['template'   ]['medium' ] = medium_template
+		module_info['template'   ]['short'  ] = short_template
+		module_info['template'   ]['default'] = default_template
 
 		module_info['constructors'] = []
+		if "class_constructors" in class_info.keys():
+			class_constructors = class_info["class_constructors"]
+			for _, constructor in class_constructors.items():
+				arg_nbr = constructor["method_nb_arguments"]
+				args_description = []
+				every_arg_OK = True
+				for a_idx in range(arg_nbr):
+					arg_info = constructor["method_arguments"][a_idx]
+					reduced_arg_type = arg_info["arg_type"]
+					reduced_arg_type = reduced_arg_type.split("::")[-1]
+					reduced_arg_type = reduced_arg_type.split("<")[0]
+					if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
+						message = bcolors.WARNING + "Warning:" + " argument " + arg_info["arg_name"] + " in the constructor of " + class_info['class_name'] + " has type '" + arg_info["arg_type"] + "'; this type is unknown.\nThis constructor will not be wrapped.\n" + bcolors.ENDC
+						print(message)
+						every_arg_OK = False
+						break
 
-		class_constructors = class_info["class_constructors"]
-		for _, constructor in class_constructors.items():
-			module_info['constructors'].append({})
-			arg_nbr = constructor["method_nb_arguments"]
-			args_description = []
-			for a_idx in range(arg_nbr):
-				arg_info = constructor["method_arguments"][a_idx]
-				if "tool" in arg_info["arg_type"] and arg_info["arg_type"] not in existing_tools:
-					message = bcolors.WARNING + "Warning:" + " argument " + arg_info["arg_name"] + " in the constructor of " + class_info['class_name'] + " has type '" + arg_info["arg_type"] + "'; this type is unknown.\nThis constructor will not be wrapped.\n" + bcolors.ENDC
-					print(message)
-					continue
+					arg_type = ""
+					if arg_info["arg_is_const"]:
+						arg_type += "const "
+					arg_type += arg_info["arg_type"]
 
-				arg_type = ""
-				if arg_info["arg_is_const"]:
-					arg_type += "const "
-				arg_type += arg_info["arg_type"]
-
-				arg_default = ""
-				if "=" in arg_info["arg_signature"]:
-					arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
-				arg_description = {}
-				arg_description['name'   ] = arg_info["arg_name"]
-				arg_description['type'   ] = arg_type
-				arg_description['default'] = arg_default
-				args_description.append(arg_description)
-			module_info['constructors'][-1]['args'] = args_description
+					arg_default = ""
+					if "=" in arg_info["arg_signature"]:
+						arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
+					arg_description = {}
+					arg_description['name'   ] = arg_info["arg_name"]
+					arg_description['type'   ] = arg_type
+					arg_description['default'] = arg_default
+					args_description.append(arg_description)
+				if every_arg_OK:
+					module_info['constructors'].append({})
+					module_info['constructors'][-1]['args'] = args_description
+		else:
+			print("Class without constructor :", )
 		if value:
 			module_info['leaf'] = False
 		else:
@@ -129,13 +149,17 @@ def write_hpp_wrappers(modules, template_path, verbose = False):
 		wrapper_hpp = ""
 		with open(template_path + "/Wrapper_template.hpp","r") as f:
 			wrapper_hpp = f.read()
+			if 'parent' in module.keys():
+				wrapper_hpp = wrapper_hpp.replace("{parent}", ", " + module['parent'])
+			else:
+				wrapper_hpp = wrapper_hpp.replace("{parent}", "")
 			wrapper_hpp = wrapper_hpp.replace("{SHORT_NAME}"      , module['short_name'     ].upper())
 			wrapper_hpp = wrapper_hpp.replace("{short_name}"      , module['short_name'     ]        )
 			wrapper_hpp = wrapper_hpp.replace("{name}"            , module['name'           ]        )
-			wrapper_hpp = wrapper_hpp.replace("{parent}"          , module['parent'         ]        )
-			wrapper_hpp = wrapper_hpp.replace("{full_template}"   , module['template']['full'  ]     )
-			wrapper_hpp = wrapper_hpp.replace("{medium_template}" , module['template']['medium']     )
-			wrapper_hpp = wrapper_hpp.replace("{short_template}"  , module['template']['short' ]     )
+			wrapper_hpp = wrapper_hpp.replace("{full_template}"   , module['template']['full'   ]    )
+			wrapper_hpp = wrapper_hpp.replace("{medium_template}" , module['template']['medium' ]    )
+			wrapper_hpp = wrapper_hpp.replace("{short_template}"  , module['template']['short'  ]    )
+			wrapper_hpp = wrapper_hpp.replace("{default_template}", module['template']['default']    )
 
 		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".hpp","w") as f:
 			if verbose:
@@ -164,16 +188,20 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			init_lines += new_line + "\n"
 
 		init_lines = init_lines[:-1]
-
+		wrapper_cpp = ""
 		with open(template_path + "/Wrapper_template.cpp","r") as f:
 			wrapper_cpp = f.read()
-			wrapper_cpp = wrapper_cpp.replace("{short_name}",      module['short_name'        ])
-			wrapper_cpp = wrapper_cpp.replace("{name}",            module['name'              ])
-			wrapper_cpp = wrapper_cpp.replace("{short_template}",  module['template']['short' ])
-			wrapper_cpp = wrapper_cpp.replace("{medium_template}", module['template']['medium'])
-			wrapper_cpp = wrapper_cpp.replace("{parent}",          module['parent'            ])
-			wrapper_cpp = wrapper_cpp.replace("{path}",            module['include_path'      ])
-			wrapper_cpp = wrapper_cpp.replace("{init_lines}",      init_lines                  )
+			if 'parent' in module.keys():
+				wrapper_cpp = wrapper_cpp.replace("{parent}", "," + module['parent'])
+			else:
+				wrapper_cpp = wrapper_cpp.replace("{parent}", "")
+			wrapper_cpp = wrapper_cpp.replace("{short_name}",       module['short_name'         ])
+			wrapper_cpp = wrapper_cpp.replace("{name}",             module['name'               ])
+			wrapper_cpp = wrapper_cpp.replace("{short_template}",   module['template']['short'  ])
+			wrapper_cpp = wrapper_cpp.replace("{medium_template}" , module['template']['medium' ])
+			wrapper_cpp = wrapper_cpp.replace("{default_template}", module['template']['default'])
+			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
+			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
 
 		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".cpp","w") as f:
 			if verbose:
@@ -185,6 +213,7 @@ def get_templates(class_info):
 	full_template  = class_info["class_templates"][0]["template_signature"]
 	template_args  = class_info["class_templates"][0]["template_args"     ]
 	short_template = ""
+	default_template = ""
 
 	for arg in template_args:
 		new_short_template = arg["template_arg_name"].split(" ")[-1]
@@ -192,39 +221,45 @@ def get_templates(class_info):
 		if not arg["template_arg_default"]:
 			message = bcolors.WARNING + "Warning: " + "template " + new_short_template + " of class " + class_info['class_name'] + " has no default value.\nThe class " + class_info['class_name'] + " will not be wrapped." + bcolors.ENDC
 			raise RuntimeError(message)
+		else:
+			default_template += arg["template_arg_default"] + ", "
+
 
 	short_template = short_template[:-2]
+	default_template = default_template[:-2]
 	medium_template = ""
 
 	for arg in template_args:
 		medium_template = medium_template + arg["template_arg_name"] + ", "
 	medium_template = medium_template[:-2]
-	return full_template, medium_template, short_template
+	return full_template, medium_template, short_template, default_template
 
-def gen_py_aff3ct_cpp(modules, tree, mod, cpp_content):
+def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 	for key, value in tree.items():
 		if key in modules:
 			module_info = modules[key]
-
-			if not module_info["leaf"]:
-				cpp_content = '\tpy::module_ mod_' + module_info['short_name'].lower() + " = " + mod + '.def_submodule("' +  module_info['short_name'].lower() + '");\n' + cpp_content
-				mod = 'mod_' + module_info['short_name'].lower()
+			the_mod = mod
+			if not module_info["leaf"] and mod == root_mod:
+				cpp_content += '\tpy::module_ mod_' + module_info['short_name'].lower() + " = " + mod + '.def_submodule("' +  module_info['short_name'].lower() + '");\n'
+				the_mod = 'mod_' + module_info['short_name'].lower()
 
 			line = '\tstd::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_'
-			line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + mod + '));\n'
+			line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + the_mod + '));\n'
 			line += '\twrappers.push_back(wrapper_' + module_info["short_name"].lower() + '.get()); \n\n'
 			cpp_content += line
 
 			if not module_info["leaf"]:
-				cpp_content = gen_py_aff3ct_cpp(modules, value, 'mod_' + module_info["short_name"].lower(), cpp_content)
+				cpp_content = gen_py_aff3ct_cpp(modules, value, the_mod, root_mod, cpp_content)
 	return cpp_content
 
-def write_py_aff3ct_cpp (modules, tree, command_path, template_path, verbose = False):
-	other_wrappers = gen_py_aff3ct_cpp(modules, tree, 'm1', '')
+def write_py_aff3ct_cpp (tools, tools_tree, modules, module_tree, command_path, template_path, verbose = False):
+	other_tool_wrappers   = gen_py_aff3ct_cpp(tools, tools_tree, 'm0', 'm0', '')
+	other_module_wrappers = gen_py_aff3ct_cpp(modules, module_tree, 'm1', 'm1', '')
 	py_aff3ct_cpp = ""
 	with open(template_path + "/py_aff3ct_template.cpp","r") as f:
 		py_aff3ct_cpp = f.read()
-		py_aff3ct_cpp = py_aff3ct_cpp.replace("{other_wrappers}", other_wrappers[0:-2])
+		py_aff3ct_cpp = py_aff3ct_cpp.replace("{other_tool_wrappers}", other_tool_wrappers[0:-2])
+		py_aff3ct_cpp = py_aff3ct_cpp.replace("{other_module_wrappers}", other_module_wrappers[0:-2])
 
 	if verbose:
 		print("Creating file: " + command_path + "/src/py_aff3ct.cpp")

@@ -8,6 +8,7 @@
 #include "Wrapper_py/Module/Socket.hpp"
 #include "Wrapper_py/Module/Task.hpp"
 #include "Wrapper_py/Module/Py_Module/Py_Module.hpp"
+#include "Wrapper_py/Tools/Gaussian_noise_generator_implem.hpp"
 
 {other_includes}
 
