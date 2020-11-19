@@ -1,6 +1,7 @@
 cmake/
+
 # automatically generated
-src/
+/src
 
 # VS code hidden files
 .vscode
