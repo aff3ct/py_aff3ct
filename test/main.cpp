@@ -71,6 +71,10 @@ int main(int argc, char** argv)
 	//(*plot   )[                 "plot::x" ].bind((*channel)[chn::sck::add_noise  ::Y_N]);
 	(*monitor)[mnt::sck::check_errors::U  ].bind((*source )[src::sck::generate   ::U_K]);
 	(*monitor)[mnt::sck::check_errors::V  ].bind((*decoder)[dec::sck::decode_siho::V_K]);
+
+	std::vector<float> sigma(n_frames, 0.0f);
+	(*channel)[chn::sck::add_noise::CP].bind(sigma.data());
+
 	std::unique_ptr<tools::Sequence> sequence(new tools::Sequence((*source)[src::tsk::generate], n_threads));
 	sequence->set_n_frames(n_frames);
 	std::ofstream f("sequence.dot");
@@ -85,7 +89,7 @@ int main(int argc, char** argv)
 	for (auto& type : tasks_per_types) for (auto& tsk : type)
 	{
 		tsk->set_autoalloc      (true ); // enable the automatic allocation of the data in the tasks
-		tsk->set_debug          (false ); // disable the debug mode
+		tsk->set_debug          (false); // disable the debug mode
 		tsk->set_debug_limit    (-1   ); // display only the 8 first bits if the debug mode is enabled
 		tsk->set_debug_precision(2    ); // display only all values if the debug mode is enabled
 		tsk->set_stats          (true ); // enable the statistics
@@ -127,13 +131,9 @@ int main(int argc, char** argv)
 	{
 		// compute the current sigma for the channel noise
 		const auto esn0  = tools::ebn0_to_esn0 (ebn0, 2*R);
-		const auto sigma = tools::esn0_to_sigma(esn0     );
-
-		noise->set_values(sigma, ebn0, esn0);
-
-		// update the sigma of the modem and the channel
-		channel->set_noise(*noise);
-
+		const auto sigma_ = tools::esn0_to_sigma(esn0     );
+		noise->set_values(sigma_, ebn0, esn0);
+		std::fill(sigma.begin(), sigma.end(), sigma_);
 		// display the performance (BER and FER) in real time (in a separate thread)
 		terminal->start_temp_report();
 
