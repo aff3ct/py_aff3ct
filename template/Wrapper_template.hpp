@@ -2,6 +2,9 @@
 #define WRAPPER_{SHORT_NAME}_HPP_
 
 #include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/iostream.h>
+
 #include <aff3ct.hpp>
 
 #include "Wrapper_py/Wrapper_py.hpp"

@@ -22,5 +22,4 @@ void Wrapper_{short_name}{short_template}
 {init_lines}
 };
 
-#include "Tools/types.h"
-template class aff3ct::wrapper::Wrapper_{short_name}{default_template};
+{footer}

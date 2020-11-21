@@ -65,7 +65,8 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 
 		module_info = {}
 		module_info['name']		 = name
-		module_info['short_name']   = short_name
+		module_info['short_name' ] = short_name
+		module_info['is_abstract'] = class_info["class_is_abstract"]
 		if "class_inheritence" in class_info.keys():
 			matching = [s for s in class_info['class_inheritence'] if base in s]
 			if matching:
@@ -93,41 +94,48 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 		module_info['template'   ]['default'] = default_template
 
 		module_info['constructors'] = []
-		if "class_constructors" in class_info.keys():
-			class_constructors = class_info["class_constructors"]
-			for _, constructor in class_constructors.items():
-				arg_nbr = constructor["method_nb_arguments"]
-				args_description = []
-				every_arg_OK = True
-				for a_idx in range(arg_nbr):
-					arg_info = constructor["method_arguments"][a_idx]
-					reduced_arg_type = arg_info["arg_type"]
-					reduced_arg_type = reduced_arg_type.split("::")[-1]
-					reduced_arg_type = reduced_arg_type.split("<")[0]
-					if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
-						message = bcolors.WARNING + "Warning:" + " argument " + arg_info["arg_name"] + " in the constructor of " + class_info['class_name'] + " has type '" + arg_info["arg_type"] + "'; this type is unknown.\nThis constructor will not be wrapped.\n" + bcolors.ENDC
-						print(message)
-						every_arg_OK = False
-						break
-
-					arg_type = ""
-					if arg_info["arg_is_const"]:
-						arg_type += "const "
-					arg_type += arg_info["arg_type"]
-
-					arg_default = ""
-					if "=" in arg_info["arg_signature"]:
-						arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
-					arg_description = {}
-					arg_description['name'   ] = arg_info["arg_name"]
-					arg_description['type'   ] = arg_type
-					arg_description['default'] = arg_default
-					args_description.append(arg_description)
-				if every_arg_OK:
-					module_info['constructors'].append({})
-					module_info['constructors'][-1]['args'] = args_description
+		if module_info['is_abstract']:
+			message = bcolors.OKBLUE + "(II) Abstract class : " + module_info['name'] + '.'+ bcolors.ENDC
+			print(message)
 		else:
-			print("Class without constructor :", )
+			if "class_constructors" in class_info.keys():
+				class_constructors = class_info["class_constructors"]
+				for _, constructor in class_constructors.items():
+					if constructor["method_access"] == "public":
+						arg_nbr = constructor["method_nb_arguments"]
+						args_description = []
+						every_arg_OK = True
+						for a_idx in range(arg_nbr):
+							arg_info = constructor["method_arguments"][a_idx]
+							reduced_arg_type = arg_info["arg_type"]
+							reduced_arg_type = reduced_arg_type.split("::")[-1]
+							reduced_arg_type = reduced_arg_type.split("<")[0]
+							if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
+								message = bcolors.WARNING + "(WW) Constructor not be wrapped for class " + class_info['class_name'] + "\t-> argument " + arg_info["arg_name"] + " has unknown type '" + arg_info["arg_type"] + "'." + bcolors.ENDC
+								print(message)
+								every_arg_OK = False
+								break
+
+							arg_type = ""
+							if arg_info["arg_is_const"]:
+								arg_type += "const "
+							arg_type += arg_info["arg_type"]
+
+							arg_default = ""
+							if "=" in arg_info["arg_signature"]:
+								arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
+							arg_description = {}
+							arg_description['name'   ] = arg_info["arg_name"]
+							arg_description['type'   ] = arg_type
+							arg_description['default'] = arg_default
+							args_description.append(arg_description)
+						if every_arg_OK:
+							module_info['constructors'].append({})
+							module_info['constructors'][-1]['args'] = args_description
+			else:
+				message = bcolors.WARNING + "(WW) Concrete class without constructor : " + module_info['name']+ '.'+ bcolors.ENDC
+				print(message)
+
 		if value:
 			module_info['leaf'] = False
 		else:
@@ -195,11 +203,18 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 				wrapper_cpp = wrapper_cpp.replace("{parent}", "," + module['parent'])
 			else:
 				wrapper_cpp = wrapper_cpp.replace("{parent}", "")
+
+			if module['has_template']:
+				footer = '#include "Tools/types.h"\ntemplate class aff3ct::wrapper::Wrapper_'+ module['short_name'         ] + module['template']['default']+';'
+			else:
+				footer = ''
+
 			wrapper_cpp = wrapper_cpp.replace("{short_name}",       module['short_name'         ])
 			wrapper_cpp = wrapper_cpp.replace("{name}",             module['name'               ])
 			wrapper_cpp = wrapper_cpp.replace("{short_template}",   module['template']['short'  ])
 			wrapper_cpp = wrapper_cpp.replace("{medium_template}" , module['template']['medium' ])
 			wrapper_cpp = wrapper_cpp.replace("{default_template}", module['template']['default'])
+			wrapper_cpp = wrapper_cpp.replace("{footer}",           footer                       )
 			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
 			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
 
@@ -219,7 +234,7 @@ def get_templates(class_info):
 		new_short_template = arg["template_arg_name"].split(" ")[-1]
 		short_template += new_short_template  + ", "
 		if not arg["template_arg_default"]:
-			message = bcolors.WARNING + "Warning: " + "template " + new_short_template + " of class " + class_info['class_name'] + " has no default value.\nThe class " + class_info['class_name'] + " will not be wrapped." + bcolors.ENDC
+			message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + class_info['class_name'] + " has a template without default value." + bcolors.ENDC
 			raise RuntimeError(message)
 		else:
 			default_template += arg["template_arg_default"] + ", "
@@ -244,7 +259,11 @@ def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 				the_mod = 'mod_' + module_info['short_name'].lower()
 
 			line = '\tstd::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_'
-			line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + the_mod + '));\n'
+			if module_info['has_template']:
+				line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + the_mod + '));\n'
+			else:
+				line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '(' + the_mod + '));\n'
+
 			line += '\twrappers.push_back(wrapper_' + module_info["short_name"].lower() + '.get()); \n\n'
 			cpp_content += line
 

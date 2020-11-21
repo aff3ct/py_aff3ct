@@ -34,7 +34,7 @@ if args.clean:
 if not  Path(args.db_path).is_file():
 	if args.verbose:
 		print("Creating db.json file...")
-	create_db_command = 'cd ' + db_folder + ' ; ./01_aff3ct_dump_clang_ast.sh ; ./02_aff3ct_read_clang_ast.py -f aff3ct_fixes.json -m aff3ct_modules.json ; cd ' + command_path
+	create_db_command = 'cd ' + db_folder + ' ; ./01_aff3ct_dump_clang_ast.sh ; ./02_aff3ct_read_clang_ast.py ; cd ' + command_path
 	call(create_db_command, shell=True)
 
 if args.clean:
