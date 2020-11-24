@@ -78,7 +78,27 @@ void Wrapper_Socket
 
 		py::buffer_info buffer = arr.request();
 		if (buffer.shape[0] !=n_row || buffer.shape[1] !=n_col)
-			throw std::runtime_error("Input shape must match the socket one.");
+		{
+			std::stringstream message;
+			message << "The shape of the array must match the socket one.";
+			message << "Socket shape: " << n_row << " x " << n_col << ".";
+			message << "Array shape: " << buffer.shape[0] << " x " << buffer.shape[1] << ".\n";
+			throw std::runtime_error(message.str());
+		}
+
+
+
+		py::array py_self = py::cast(self);
+		py::print(arr.dtype());
+		py::print(py_self.dtype());
+		if (!arr.dtype().is(py_self.dtype()))
+		{
+			std::stringstream message;
+			message << "The dtype of the array must match the socket one.";
+			message << "Socket dtype: " << py_self.dtype().attr("name").cast<std::string>() << ".";
+			message << "Array dtype: " << arr.dtype().attr("name").cast<std::string>() << ".\n";
+			throw std::runtime_error(message.str());
+		}
 
 		self.bind(buffer.ptr);
 	}, "Binds the socket to the numpy array 'array' with priority 'priority'.", "array"_a);
