@@ -89,8 +89,6 @@ void Wrapper_Socket
 
 
 		py::array py_self = py::cast(self);
-		py::print(arr.dtype());
-		py::print(py_self.dtype());
 		if (!arr.dtype().is(py_self.dtype()))
 		{
 			std::stringstream message;
