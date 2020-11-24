@@ -3,14 +3,14 @@
 from pathlib import Path
 
 class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+    HEADER    = '\033[95m'
+    OKBLUE    = '\033[94m'
+    OKCYAN    = '\033[96m'
+    OKGREEN   = '\033[92m'
+    WARNING   = '\033[93m'
+    FAIL      = '\033[91m'
+    ENDC      = '\033[0m'
+    BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
 
 def build_inheritence_tree(data, template, include, exclude, tree):
@@ -62,9 +62,10 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 		full_template   = ""
 		medium_template = ""
 		short_template  = ""
+		default_template  = ""
 
 		module_info = {}
-		module_info['name']		 = name
+		module_info['name'] = name
 		module_info['short_name' ] = short_name
 		module_info['is_abstract'] = class_info["class_is_abstract"]
 		if "class_inheritence" in class_info.keys():
@@ -92,10 +93,26 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 		module_info['template'   ]['medium' ] = medium_template
 		module_info['template'   ]['short'  ] = short_template
 		module_info['template'   ]['default'] = default_template
-
 		module_info['constructors'] = []
+
+		public_destructor = False
+		if "class_destructors" in class_info.keys():
+			for _, destructor in class_info["class_destructors"].items():
+				if destructor["method_access"] == "public":
+					public_destructor = True
+		if len(class_info["class_destructors"].items()) == 0:
+			message = bcolors.OKBLUE + "(II) No destructor for class " + module_info['name'] + '.'+ bcolors.ENDC
+			print(message)
+
+		dtor_trick = ""
+		if not public_destructor and len(class_info["class_destructors"].items()) > 0:
+			message = bcolors.OKBLUE + "(II) Protected destructor for class " + module_info['name'] + '.'+ bcolors.ENDC
+			print(message)
+			dtor_trick = ", std::unique_ptr<" + module_info['name'] + module_info['template']['short'] + ", py::nodelete>"
+		module_info['dtor_trick'] = dtor_trick
+
 		if module_info['is_abstract']:
-			message = bcolors.OKBLUE + "(II) Abstract class : " + module_info['name'] + '.'+ bcolors.ENDC
+			message = bcolors.OKBLUE + "(II) Abstract class " + module_info['name'] + '.'+ bcolors.ENDC
 			print(message)
 		else:
 			if "class_constructors" in class_info.keys():
@@ -124,6 +141,7 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 							arg_default = ""
 							if "=" in arg_info["arg_signature"]:
 								arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
+
 							arg_description = {}
 							arg_description['name'   ] = arg_info["arg_name"]
 							arg_description['type'   ] = arg_type
@@ -133,7 +151,7 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 							module_info['constructors'].append({})
 							module_info['constructors'][-1]['args'] = args_description
 			else:
-				message = bcolors.WARNING + "(WW) Concrete class without constructor : " + module_info['name']+ '.'+ bcolors.ENDC
+				message = bcolors.WARNING + "(WW) Concrete class without constructor: " + module_info['name']+ '.'+ bcolors.ENDC
 				print(message)
 
 		if value:
@@ -168,6 +186,8 @@ def write_hpp_wrappers(modules, template_path, verbose = False):
 			wrapper_hpp = wrapper_hpp.replace("{medium_template}" , module['template']['medium' ]    )
 			wrapper_hpp = wrapper_hpp.replace("{short_template}"  , module['template']['short'  ]    )
 			wrapper_hpp = wrapper_hpp.replace("{default_template}", module['template']['default']    )
+			wrapper_hpp = wrapper_hpp.replace("{dtor_trick}"      , module['dtor_trick'     ]        )
+
 
 		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".hpp","w") as f:
 			if verbose:
@@ -217,6 +237,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			wrapper_cpp = wrapper_cpp.replace("{footer}",           footer                       )
 			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
 			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
+			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]    )
 
 		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".cpp","w") as f:
 			if verbose:

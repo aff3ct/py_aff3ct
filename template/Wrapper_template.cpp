@@ -11,7 +11,7 @@ using namespace aff3ct::wrapper;
 Wrapper_{short_name}{short_template}
 ::Wrapper_{short_name}(py::handle scope)
 : Wrapper_py(),
-  py::class_<{name}{short_template}{parent}>(scope, "{short_name}")
+  py::class_<{name}{short_template}{parent}{dtor_trick}>(scope, "{short_name}")
 {
 }
 

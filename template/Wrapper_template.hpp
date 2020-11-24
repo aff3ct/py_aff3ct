@@ -20,7 +20,7 @@ namespace wrapper
 {
 {full_template}
 class Wrapper_{short_name} : public Wrapper_py,
-                             public py::class_<{name}{short_template}{parent}>
+                             public py::class_<{name}{short_template}{parent}{dtor_trick}>
 {
 	public:
 	Wrapper_{short_name}(py::handle scope);
