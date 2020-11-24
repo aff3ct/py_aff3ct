@@ -20,9 +20,6 @@ using namespace py::literals;
 using namespace aff3ct::module;
 using namespace aff3ct::wrapper;
 
-
-
-
 Wrapper_Module
 ::Wrapper_Module(py::handle scope)
 : Wrapper_py(),
