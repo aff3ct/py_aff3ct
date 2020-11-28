@@ -13,28 +13,28 @@ class bcolors:
     BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def build_inheritence_tree(data, template, include, exclude, tree):
+def build_inheritence_tree(data, template, include, exclude, tree, use_flt):
 	for key, value in data.items():
-		res = [s for s in include if s in value["class_short_name"]]
-		if not res:
+		res = [s for s in include if s == value["class_short_name"]]
+		if not res and use_flt:
 			continue
 
 		res = [s for s in exclude if s in value["class_short_name"]]
 		if res:
 			continue
 
-		if "class_inheritence" in value:
+		if("tool" in template):
+			tree[key] = {}
+			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
+		elif "class_inheritence" in value:
 			for s in value["class_inheritence"]:
 				short_class_inh = s.replace("public ", "")
 				short_class_inh = short_class_inh.split("::")[-1]
 				short_class_inh = short_class_inh.split('<')[0]
 				if (template == short_class_inh):
 					tree[key] = {}
-					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
-				break
-		elif("tool" in template):
-			tree[key] = {}
-			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
+					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
+					break
 
 	return tree
 
@@ -68,12 +68,28 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 		module_info['name'] = name
 		module_info['short_name' ] = short_name
 		module_info['is_abstract'] = class_info["class_is_abstract"]
+
 		if "class_inheritence" in class_info.keys():
+
 			matching = [s for s in class_info['class_inheritence'] if base in s]
-			if matching:
+			if matching and base:
 				matching = matching[0]
 				matching = matching.replace("public ", "")
-			module_info['parent']	   = matching
+				module_info['parent'] = matching
+
+			module_info['definitions'] = []
+			for s in class_info['class_inheritence']:
+				if "Interface" in s:
+					s_ = s.replace("public ", "")
+					s_ = s_.split("::")[-1]
+					s_ = s_.split("<")[0]
+					s_ = 'aff3ct::tools::' + s_
+					for _,method in data[s_]["class_methods"].items():
+						method_info = {}
+						method_info['short_name'] = method['method_short_name']
+						module_info['definitions'].append(method_info)
+						message = bcolors.OKGREEN + "(II) Definition " + method_info['short_name'] + " added to module " + module_info['name'] + '.'+ bcolors.ENDC
+						print(message)
 
 		module_info['has_template'] = has_template
 		module_info['include_path']  = path + '/' + short_name
@@ -127,6 +143,7 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 							reduced_arg_type = arg_info["arg_type"]
 							reduced_arg_type = reduced_arg_type.split("::")[-1]
 							reduced_arg_type = reduced_arg_type.split("<")[0]
+							reduced_arg_type = reduced_arg_type.split(" ")[0]
 							if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
 								message = bcolors.WARNING + "(WW) Constructor not be wrapped for class " + class_info['class_name'] + "\t-> argument " + arg_info["arg_name"] + " has unknown type '" + arg_info["arg_type"] + "'." + bcolors.ENDC
 								print(message)
@@ -204,7 +221,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		for constructor in class_constructors:
 			arg_types = ""
 			arg_init  = ""
-			new_line  = "\tthis->def(py::init<{types}>(), {init});"
+			new_line  = "\n\tthis->def(py::init<{types}>(){init}, py::return_value_policy::reference);"
 			arg_nbr = len(constructor['args'])
 			for a_idx in range(arg_nbr):
 				arg_types += constructor['args'][a_idx]['type'] + ", "
@@ -212,10 +229,26 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			arg_types = arg_types[:-2]
 			arg_init  = arg_init [:-2]
 			new_line  = new_line.replace("{types}", arg_types)
-			new_line  = new_line.replace("{init}", arg_init)
-			init_lines += new_line + "\n"
+			if arg_init:
+				arg_init = "," + arg_init
 
-		init_lines = init_lines[:-1]
+			new_line  = new_line.replace("{init}", arg_init)
+			init_lines += new_line
+		if init_lines:
+			init_lines += '\n'
+
+
+		def_lines = ""
+		if 'definitions' in module.keys():
+			for def_ in module['definitions']:
+				if module['short_name'] == 'Decoder' and def_['short_name'] == 'reset':
+					def_lines += 'this->def("reset", [](aff3ct::module::Decoder& self){self.reset();});'
+				else:
+					def_lines += '\n\tthis->def("' + def_['short_name'] + '"'
+					def_lines += ', &' + module['short_name'] + module['template']['short'] + '::' + def_['short_name'] + ');'
+		if def_lines:
+			def_lines += '\n'
+
 		wrapper_cpp = ""
 		with open(template_path + "/Wrapper_template.cpp","r") as f:
 			wrapper_cpp = f.read()
@@ -228,7 +261,6 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 				footer = '#include "Tools/types.h"\ntemplate class aff3ct::wrapper::Wrapper_'+ module['short_name'         ] + module['template']['default']+';'
 			else:
 				footer = ''
-
 			wrapper_cpp = wrapper_cpp.replace("{short_name}",       module['short_name'         ])
 			wrapper_cpp = wrapper_cpp.replace("{name}",             module['name'               ])
 			wrapper_cpp = wrapper_cpp.replace("{short_template}",   module['template']['short'  ])
@@ -237,7 +269,8 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			wrapper_cpp = wrapper_cpp.replace("{footer}",           footer                       )
 			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
 			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
-			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]    )
+			wrapper_cpp = wrapper_cpp.replace("{def_lines}",        def_lines                   )
+			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]        )
 
 		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".cpp","w") as f:
 			if verbose:

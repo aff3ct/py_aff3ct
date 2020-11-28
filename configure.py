@@ -52,21 +52,23 @@ with open(args.db_path, "r") as read_file:
 
 include_tools  = args.include_tool
 exclude_tools  = args.exclude_tool
-tools_tree = aff3ct_tools.build_inheritence_tree(data, "tools", include_tools, exclude_tools, {})
+tools_tree = aff3ct_tools.build_inheritence_tree(data, "tools", include_tools, exclude_tools, {}, True)
 if args.verbose:
 	aff3ct_tools.print_tree(tools_tree)
 
-tools = aff3ct_tools.build_modules(data, tools_tree, "", {}, command_path + "/src", "Wrapper_py/Tools", [])
+tools = aff3ct_tools.build_modules(data, tools_tree, "", {}, command_path + "/src", "Wrapper_py/Tools", {})
 aff3ct_tools.make_dir_tree      (tools,                                         args.verbose)
 aff3ct_tools.write_hpp_wrappers (tools,                     args.template_path              )
 aff3ct_tools.write_cpp_wrappers (tools,                     args.template_path              )
 
 existing_tools = tools.copy()
-existing_tools["Gaussian_noise_generator_implem"] = {}
+existing_tools["aff3ct::tools::Gaussian_noise_generator_implem"] = {}
+existing_tools["aff3ct::tools::Frozenbits_generator"] = {}
+existing_tools["aff3ct::tools::Sequence"] = {}
 
 include_modules  = args.include_module
 exclude_modules  = args.exclude_module
-tree = aff3ct_tools.build_inheritence_tree(data, "Module", include_modules, exclude_modules, {})
+tree = aff3ct_tools.build_inheritence_tree(data, "Module", include_modules, exclude_modules, {}, True)
 if args.verbose:
 	aff3ct_tools.print_tree(tree)
 

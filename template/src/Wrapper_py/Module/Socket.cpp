@@ -86,8 +86,6 @@ void Wrapper_Socket
 			throw std::runtime_error(message.str());
 		}
 
-
-
 		py::array py_self = py::cast(self);
 		if (!arr.dtype().is(py_self.dtype()))
 		{

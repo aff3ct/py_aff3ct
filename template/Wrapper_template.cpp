@@ -18,8 +18,6 @@ Wrapper_{short_name}{short_template}
 {medium_template}
 void Wrapper_{short_name}{short_template}
 ::definitions()
-{
-{init_lines}
-};
+{{init_lines}{def_lines}};
 
 {footer}
