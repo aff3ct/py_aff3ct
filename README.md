@@ -41,6 +41,8 @@ Compile the code on Linux/MacOS/MinGW:
 
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
+	$ cd ../test
+	$ python3 test_bfer.py
 
 The compiled binary is in `build/bin/py_aff3ct_test`.
 
