@@ -34,13 +34,13 @@ void Wrapper_Sequence
 	this->def(py::init<module::Task &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "first"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true);
 	this->def(py::init<module::Task &, module::Task &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "first"_a, "last"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true);*/
 	//this->def("exec", [](aff3ct::tools::Sequence& self, std::function<bool(const std::vector<const int*>&)> stop_condition){self.exec(stop_condition);});
-	this->def("exec", [](aff3ct::tools::Sequence& self, std::function<bool()>& stop_condition)
+	this->def("exec", [](aff3ct::tools::Sequence& self)
 	{
 		py::gil_scoped_release release{};
-		self.exec(stop_condition); // gil aquired before exec of stop_condition
-		                           // see that pybind11/functionnal.h l.62
+		self.exec(); // gil aquired before exec of stop_condition
+		             // see that pybind11/functionnal.h l.62
 	});
-
+	/*
 	this->def("exec_auto", [](aff3ct::tools::Sequence& self)
 	{
 		py::gil_scoped_release release;
@@ -48,9 +48,9 @@ void Wrapper_Sequence
 		mnt_red.set_reduce_frequency(std::chrono::nanoseconds(1000000));
 		self.exec([&mnt_red]() { return mnt_red.is_done();}); // gil aquired before exec of stop_condition
 		                              // see that pybind11/functionnal.h l.62
-	});
+	});*/
 
-	//this->def("exec", [](aff3ct::tools::Sequence& self, const size_t tid, const int frame_id){self.exec(tid, frame_id);}, "tid"_a = 0, "frame_id"_a=-1);
+
 	this->def("export_dot", [](aff3ct::tools::Sequence& self, const std::string& file_name){
 		std::ofstream f(file_name);
 		self.export_dot(f);
@@ -64,10 +64,6 @@ void Wrapper_Sequence
 		);
 		tools::Stats::show(self.get_modules_per_types(), true);
 	});
-
-	this->def("bfer_reduction", [](const aff3ct::tools::Sequence& self){
-		return new tools::Monitor_reduction<module::Monitor_BFER<>>(self.get_modules<module::Monitor_BFER<>>());
-	}, py::return_value_policy::take_ownership);
 
 	this->def("get_tasks_per_types", &aff3ct::tools::Sequence::get_tasks_per_types);
 
