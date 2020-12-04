@@ -37,7 +37,7 @@ Compile the code on Linux/MacOS/MinGW:
 
 	$ mkdir build && cd build
 
-	& ../configure.py --include-module Source Modem Channel Encoder Decoder --exclude-module Modem_CPM Modem_OOK Encoder_RSC_generic_json_sys Decoder_LDPC_bit_flipping Decoder_chase_pyndiah Decoder_turbo_product Decoder_RSC_BCJR_seq_generic_std_json Reporter --include-tool Constellation Sparse_matrix Pattern_polar_i Noise --verbose --clean
+	& ../configure.py --verbose
 
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
