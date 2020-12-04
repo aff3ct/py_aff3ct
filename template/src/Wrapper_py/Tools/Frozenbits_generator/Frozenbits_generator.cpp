@@ -19,7 +19,12 @@ Wrapper_Frozenbits_generator
 void Wrapper_Frozenbits_generator
 ::definitions()
 {
-	this->def("generate", &aff3ct::tools::Frozenbits_generator::generate);
+	this->def("generate", [](aff3ct::tools::Frozenbits_generator& self)
+	{
+		std::vector<bool> fb(self.get_N(), true);
+		self.generate(fb);
+		return fb;
+	}, py::return_value_policy::copy);
 	this->def("get_best_channels", &aff3ct::tools::Frozenbits_generator::get_best_channels);
 	this->def("get_K", &aff3ct::tools::Frozenbits_generator::get_K);
 	this->def("get_N", &aff3ct::tools::Frozenbits_generator::get_N);

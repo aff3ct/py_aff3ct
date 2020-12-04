@@ -56,6 +56,8 @@ PYBIND11_MODULE(py_aff3ct, m){
 	py::module_ mod_monitor = m1.def_submodule("monitor");
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_monitor(new aff3ct::wrapper::Wrapper_Monitor(mod_monitor));
 	wrappers.push_back(wrapper_monitor.get());
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_monitor_bfer_ar(new aff3ct::wrapper::Wrapper_Monitor_BFER_AR<>(mod_monitor));
+	wrappers.push_back(wrapper_monitor_bfer_ar.get());
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_monitor_bfer(new aff3ct::wrapper::Wrapper_Monitor_BFER<>(mod_monitor));
 	wrappers.push_back(wrapper_monitor_bfer.get());
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_monitor_exit(new aff3ct::wrapper::Wrapper_Monitor_EXIT<>(mod_monitor));

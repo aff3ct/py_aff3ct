@@ -22,6 +22,7 @@
 #include "Wrapper_py/Tools/Frozenbits_generator/Frozenbits_generator_file/Frozenbits_generator_5G/Frozenbits_generator_5G.hpp"
 #include "Wrapper_py/Tools/Frozenbits_generator/Frozenbits_generator_file/Frozenbits_generator_TV/Frozenbits_generator_TV.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor.hpp"
+#include "Wrapper_py/Module/Monitor/Monitor_BFER_AR/Monitor_BFER_AR.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor_BFER/Monitor_BFER.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor_EXIT/Monitor_EXIT.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor_MI/Monitor_MI.hpp"
