@@ -19,7 +19,7 @@ parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* 
 
 parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Source', 'Modem', 'Channel', 'Encoder', 'Decoder'])
 parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter'])
-parser.add_argument( "--include-tool", nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Sparse_matrix', 'Pattern_polar_i', 'Noise'])
+parser.add_argument( "--include-tool", nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Sparse_matrix', 'Pattern_polar_i', 'Noise', 'BCH_polynomial_generator', 'RS_polynomial_generator', 'Polar_code'])
 parser.add_argument( "--exclude-tool", nargs="+", help = "List of aff3ct Tools to be excluded from the wrapper. (prioritary over --include-tool). Example : --exclude-tool Constellation", default=[])
 parser.add_argument( "--include-def", nargs="+", help = "List of aff3ct defs to be wrapped. Example : --include-def get_trellis", default=['get_trellis'])
 
