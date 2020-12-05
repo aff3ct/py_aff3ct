@@ -8,25 +8,25 @@ import time
 import matplotlib.pyplot as plt
 from datetime import timedelta
 
-K = 64
-N = 128
+K = 512
+N = 1024
 ebn0_min = 0
-ebn0_max = 3.0
-ebn0_step = 0.5
+ebn0_max = 4.0
+ebn0_step = 0.25
 
 ebn0 = np.arange(ebn0_min,ebn0_max,ebn0_step)
 esn0 = ebn0 + 10 * math.log10(K/N)
 sigma_vals = 1/(math.sqrt(2) * 10 ** (esn0 / 20))
 
 
-fbgen = aff3ct.tools.frozenbits_generator.Frozenbits_generator_BEC(K, N)
-noise = aff3ct.tools.noise.Event_probability(0.1)
+fbgen = aff3ct.tools.frozenbits_generator.Frozenbits_generator_GA_Arikan(K, N)
+noise = aff3ct.tools.noise.Sigma(sigma_vals[0])
 fbgen.set_noise(noise)
 frozen_bits = fbgen.generate()
 
 src = aff3ct.module.source.Source_random_fast(K, 12)
 enc = aff3ct.module.encoder.Encoder_polar_sys(K,N,frozen_bits)
-dec = aff3ct.module.decoder.Decoder_polar_SCL_fast_sys(K,N,4,frozen_bits)
+dec = aff3ct.module.decoder.Decoder_polar_SC_fast_sys(K,N,frozen_bits)
 mdm = aff3ct.module.modem.Modem_BPSK_fast(N)
 gen = aff3ct.tools.Gaussian_noise_generator_implem.FAST
 chn = aff3ct.module.channel.Channel_AWGN_LLR(N, gen)
@@ -64,6 +64,11 @@ plt.ylim((1e-6, 1))
 print("Eb/NO | FRA | BER | FER | Tpt ")
 for i in range(len(sigma_vals)):
 	sigma[:] = sigma_vals[i]
+	noise = aff3ct.tools.noise.Sigma(sigma_vals[i])
+	fbgen.set_noise(noise)
+	frozen_bits = fbgen.generate()
+	enc.set_frozen_bits(frozen_bits)
+	dec.set_frozen_bits(frozen_bits)
 
 	t = time.time()
 	seq.exec()
