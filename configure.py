@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description=text)
 
 parser.add_argument(      "--verbose", help = "Set the configuration versose."          , action="store_true")
 parser.add_argument(        "--clean", help = "Clean before doing consfiguration."      , action="store_true")
-parser.add_argument(      "--db-path", help = "Path of the aff3ct JSON file."           , default= command_path + "/lib/aff3ct/abi/db.json")
+parser.add_argument(      "--db-path", help = "Path of the aff3ct JSON file."           , default= command_path + "/lib/aff3ct/scripts/abi/db.json")
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
 
 parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Source', 'Modem', 'Channel', 'Encoder', 'Decoder'])
