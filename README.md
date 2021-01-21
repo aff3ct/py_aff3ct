@@ -37,7 +37,7 @@ Compile the code on Linux/MacOS/MinGW:
 
 	$ mkdir build && cd build
 
-	& ../configure.py --verbose
+	$ ../configure.py --verbose
 
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
