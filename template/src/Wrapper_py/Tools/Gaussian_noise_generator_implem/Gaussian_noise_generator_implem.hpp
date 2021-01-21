@@ -6,6 +6,10 @@
 #include <aff3ct.hpp>
 #include "Wrapper_py/Wrapper_py.hpp"
 
+namespace py = pybind11;
+using namespace aff3ct;
+using namespace aff3ct::tools;
+
 namespace aff3ct
 {
 namespace wrapper
