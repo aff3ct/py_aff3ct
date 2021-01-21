@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 from pathlib import Path
+import os
+import filecmp
+from subprocess import call
 
 class bcolors:
     HEADER    = '\033[95m'
@@ -13,28 +16,28 @@ class bcolors:
     BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def build_inheritence_tree(data, template, include, exclude, tree):
+def build_inheritence_tree(data, template, include, exclude, tree, use_flt):
 	for key, value in data.items():
-		res = [s for s in include if s in value["class_short_name"]]
-		if not res:
+		res = [s for s in include if s == value["class_short_name"]]
+		if not res and use_flt:
 			continue
 
 		res = [s for s in exclude if s in value["class_short_name"]]
 		if res:
 			continue
 
-		if "class_inheritence" in value:
+		if("tool" in template):
+			tree[key] = {}
+			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
+		elif "class_inheritence" in value:
 			for s in value["class_inheritence"]:
 				short_class_inh = s.replace("public ", "")
 				short_class_inh = short_class_inh.split("::")[-1]
 				short_class_inh = short_class_inh.split('<')[0]
 				if (template == short_class_inh):
 					tree[key] = {}
-					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
-				break
-		elif("tool" in template):
-			tree[key] = {}
-			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key])
+					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
+					break
 
 	return tree
 
@@ -50,7 +53,7 @@ def compute_tree_str(tree, str, prefix):
 def print_tree(tree):
 	print(compute_tree_str(tree, "", ""))
 
-def build_modules(data, tree, base, modules, install_path, path, existing_tools):
+def build_modules(data, tree, base, modules, install_path, path, existing_tools, defs):
 	for key, value in tree.items():
 		class_info   = data[key]
 		short_name   = class_info["class_short_name"]
@@ -68,12 +71,36 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 		module_info['name'] = name
 		module_info['short_name' ] = short_name
 		module_info['is_abstract'] = class_info["class_is_abstract"]
+
 		if "class_inheritence" in class_info.keys():
+
 			matching = [s for s in class_info['class_inheritence'] if base in s]
-			if matching:
+			if matching and base:
 				matching = matching[0]
 				matching = matching.replace("public ", "")
-			module_info['parent']	   = matching
+				module_info['parent'] = matching
+
+			module_info['definitions'] = []
+			for s in class_info['class_inheritence']:
+				if "Interface" in s:
+					s_ = s.replace("public ", "")
+					s_ = s_.split("::")[-1]
+					s_ = s_.split("<")[0]
+					s_ = 'aff3ct::tools::' + s_
+					for _,method in data[s_]["class_methods"].items():
+						method_info = {}
+						method_info['short_name'] = method['method_short_name']
+						module_info['definitions'].append(method_info)
+						message = bcolors.OKGREEN + "(II) Definition " + method_info['short_name'] + " added to module " + module_info['name'] + '.'+ bcolors.ENDC
+						print(message)
+			if 'class_methods' in class_info.keys():
+				for _,method in class_info['class_methods'].items():
+					if method['method_access'] == 'public' and method['method_short_name'] in defs:
+						method_info = {}
+						method_info['short_name'] = method['method_short_name']
+						module_info['definitions'].append(method_info)
+						message = bcolors.OKGREEN + "(II) Definition " + method_info['short_name'] + " added to module " + module_info['name'] + '.'+ bcolors.ENDC
+						print(message)
 
 		module_info['has_template'] = has_template
 		module_info['include_path']  = path + '/' + short_name
@@ -127,6 +154,7 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 							reduced_arg_type = arg_info["arg_type"]
 							reduced_arg_type = reduced_arg_type.split("::")[-1]
 							reduced_arg_type = reduced_arg_type.split("<")[0]
+							reduced_arg_type = reduced_arg_type.split(" ")[0]
 							if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
 								message = bcolors.WARNING + "(WW) Constructor not be wrapped for class " + class_info['class_name'] + "\t-> argument " + arg_info["arg_name"] + " has unknown type '" + arg_info["arg_type"] + "'." + bcolors.ENDC
 								print(message)
@@ -160,15 +188,17 @@ def build_modules(data, tree, base, modules, install_path, path, existing_tools)
 			module_info['leaf'] = True
 		modules[name] = module_info
 		if value:
-			modules = build_modules(data, value, short_name, modules, install_path, path + '/' + short_name, existing_tools)
+			modules = build_modules(data, value, short_name, modules, install_path, path + '/' + short_name, existing_tools, defs)
 
 	return modules
 
 def make_dir_tree(modules, verbose = False):
 	for _,module in modules.items():
-		if verbose:
-			print("Creating folder : " + module['mk_dir_path'])
-		Path(module['mk_dir_path']).mkdir(parents=True, exist_ok=True)
+		folder_path = module['mk_dir_path']
+		if not Path(folder_path).is_dir():
+			Path(folder_path).mkdir(parents=True, exist_ok=True)
+			if verbose:
+				print("Creating folder : " + folder_path)
 
 def write_hpp_wrappers(modules, template_path, verbose = False):
 	for _,module in modules.items():
@@ -189,10 +219,8 @@ def write_hpp_wrappers(modules, template_path, verbose = False):
 			wrapper_hpp = wrapper_hpp.replace("{dtor_trick}"      , module['dtor_trick'     ]        )
 
 
-		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".hpp","w") as f:
-			if verbose:
-				print("Creating file : " + module['mk_dir_path'] + "/" + module['short_name'] + ".hpp")
-			f.write(wrapper_hpp)
+		file_path = module['mk_dir_path'] + "/" + module['short_name'] + ".hpp"
+		write_if_different(file_path, wrapper_hpp, verbose)
 
 
 def write_cpp_wrappers(modules, template_path, verbose = False):
@@ -204,7 +232,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		for constructor in class_constructors:
 			arg_types = ""
 			arg_init  = ""
-			new_line  = "\tthis->def(py::init<{types}>(), {init});"
+			new_line  = "\n\tthis->def(py::init<{types}>(){init}, py::return_value_policy::reference);"
 			arg_nbr = len(constructor['args'])
 			for a_idx in range(arg_nbr):
 				arg_types += constructor['args'][a_idx]['type'] + ", "
@@ -212,10 +240,26 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			arg_types = arg_types[:-2]
 			arg_init  = arg_init [:-2]
 			new_line  = new_line.replace("{types}", arg_types)
-			new_line  = new_line.replace("{init}", arg_init)
-			init_lines += new_line + "\n"
+			if arg_init:
+				arg_init = "," + arg_init
 
-		init_lines = init_lines[:-1]
+			new_line  = new_line.replace("{init}", arg_init)
+			init_lines += new_line
+		if init_lines:
+			init_lines += '\n'
+
+
+		def_lines = ""
+		if 'definitions' in module.keys():
+			for def_ in module['definitions']:
+				if module['short_name'] == 'Decoder' and def_['short_name'] == 'reset':
+					def_lines += 'this->def("reset", [](aff3ct::module::Decoder& self){self.reset();});'
+				else:
+					def_lines += '\n\tthis->def("' + def_['short_name'] + '"'
+					def_lines += ', &' + module['short_name'] + module['template']['short'] + '::' + def_['short_name'] + ');'
+		if def_lines:
+			def_lines += '\n'
+
 		wrapper_cpp = ""
 		with open(template_path + "/Wrapper_template.cpp","r") as f:
 			wrapper_cpp = f.read()
@@ -228,7 +272,6 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 				footer = '#include "Tools/types.h"\ntemplate class aff3ct::wrapper::Wrapper_'+ module['short_name'         ] + module['template']['default']+';'
 			else:
 				footer = ''
-
 			wrapper_cpp = wrapper_cpp.replace("{short_name}",       module['short_name'         ])
 			wrapper_cpp = wrapper_cpp.replace("{name}",             module['name'               ])
 			wrapper_cpp = wrapper_cpp.replace("{short_template}",   module['template']['short'  ])
@@ -237,12 +280,11 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			wrapper_cpp = wrapper_cpp.replace("{footer}",           footer                       )
 			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
 			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
-			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]    )
+			wrapper_cpp = wrapper_cpp.replace("{def_lines}",        def_lines                   )
+			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]        )
 
-		with open(module['mk_dir_path'] + "/" + module['short_name'] + ".cpp","w") as f:
-			if verbose:
-				print("Creating file : " + module['mk_dir_path'] + "/" + module['short_name'] + ".cpp")
-			f.write(wrapper_cpp)
+		file_path = module['mk_dir_path'] + "/" + module['short_name'] + ".cpp"
+		write_if_different(file_path, wrapper_cpp, verbose)
 
 
 def get_templates(class_info):
@@ -259,7 +301,6 @@ def get_templates(class_info):
 			raise RuntimeError(message)
 		else:
 			default_template += arg["template_arg_default"] + ", "
-
 
 	short_template = short_template[:-2]
 	default_template = default_template[:-2]
@@ -301,23 +342,65 @@ def write_py_aff3ct_cpp (tools, tools_tree, modules, module_tree, command_path, 
 		py_aff3ct_cpp = py_aff3ct_cpp.replace("{other_tool_wrappers}", other_tool_wrappers[0:-2])
 		py_aff3ct_cpp = py_aff3ct_cpp.replace("{other_module_wrappers}", other_module_wrappers[0:-2])
 
-	if verbose:
-		print("Creating file: " + command_path + "/src/py_aff3ct.cpp")
-	with open(command_path + "/src/py_aff3ct.cpp","w") as f:
-		f.write(py_aff3ct_cpp)
+	file_path = command_path + "/src/py_aff3ct.cpp"
+	write_if_different(file_path, py_aff3ct_cpp, verbose)
 
 def write_py_aff3ct_hpp (modules, command_path, template_path, verbose = False):
 	other_includes = gen_py_aff3ct_hpp(modules)
 	with open(template_path + "/py_aff3ct_template.hpp","r") as f:
 			py_aff3ct_hpp = f.read()
 			py_aff3ct_hpp = py_aff3ct_hpp.replace("{other_includes}", other_includes)
-	if verbose:
-		print("Creating file: " + command_path + "/src/py_aff3ct.hpp")
-	with open(command_path + "/src/py_aff3ct.hpp","w") as f:
-		f.write(py_aff3ct_hpp)
+	file_path = command_path + "/src/py_aff3ct.hpp"
+	write_if_different(file_path, py_aff3ct_hpp, verbose)
 
 def gen_py_aff3ct_hpp(modules):
 	hpp_content = ""
 	for _,module in modules.items():
 		hpp_content += '#include "' + module['include_path'] + '/' + module['short_name'] + '.hpp"\n'
 	return hpp_content
+
+
+def write_if_different(file_path, new_content, verbose):
+	old_content = ""
+	if Path(file_path).is_file():
+		with open(file_path,"r") as f:
+			old_content = f.read()
+
+	if not old_content == new_content:
+		with open(file_path,"w") as f:
+			if verbose and not old_content:
+				print("Creating file : " + file_path)
+			else:
+				print("Updating file : " + file_path)
+			f.write(new_content)
+
+def src_repair(template_src_path, src_path, verbose):
+	if Path(src_path).is_dir():
+		for tplt_currentpath, folders, files in os.walk(template_src_path):
+			#
+			src_currentpath = tplt_currentpath.replace(template_src_path, src_path)
+			if not Path(src_currentpath).is_dir():
+				if verbose:
+					print("Folder not found ", src_currentpath, ", replaced by ", tplt_currentpath)
+				call('cp -R ' + tplt_currentpath + ' ' + src_currentpath, shell=True)
+			else:
+				for file in files:
+					template_file_path = os.path.join(tplt_currentpath, file)
+					file_path = template_file_path.replace(template_src_path, src_path)
+					if Path(file_path).is_file():
+						if not filecmp.cmp(template_file_path, file_path):
+							if verbose:
+								print("Detected change in ", file_path, ", it will be replaced by ", template_file_path)
+							call('cp -f ' + template_file_path + ' ' + file_path, shell=True)
+					else:
+						if verbose:
+							print("File not found ", file_path, ", it will be replaced by ", template_file_path)
+
+						call('cp ' + template_file_path + ' ' + file_path, shell=True)
+	else:
+		if Path(template_src_path).is_dir():
+			if verbose:
+				print("Copy folder ", template_src_path, ", into ", src_path)
+			call('cp -R ' + template_src_path + ' ' + src_path, shell=True)
+		else:
+			print("Template folder not found.")

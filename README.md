@@ -37,10 +37,12 @@ Compile the code on Linux/MacOS/MinGW:
 
 	$ mkdir build && cd build
 
-	& ../configure.py --include-module Decoder Source Modem Encoder Channel --exclude-module Modem_CPM Modem_OOK Encoder_RSC_generic_json_sys Decoder_LDPC_bit_flipping Decoder_RSC_BCJR_inter Decoder_RSC_BCJR_intra Decoder_RSC_BCJR Decoder_chase_pyndiah Decoder_turbo_product Decoder_repetition --include-tool Constellation --verbose --clean
+	& ../configure.py --verbose
 
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
+	$ cd ../test
+	$ python3 test_bfer.py
 
 The compiled binary is in `build/bin/py_aff3ct_test`.
 
