@@ -77,7 +77,7 @@ void Wrapper_Socket
 		size_t n_col = (size_t)self.get_n_elmts()/n_row;
 
 		py::buffer_info buffer = arr.request();
-		if (buffer.shape[0] !=n_row || buffer.shape[1] !=n_col)
+		if ((size_t)buffer.shape[0] != n_row || (size_t)buffer.shape[1] != n_col)
 		{
 			std::stringstream message;
 			message << "The shape of the array must match the socket one.";
