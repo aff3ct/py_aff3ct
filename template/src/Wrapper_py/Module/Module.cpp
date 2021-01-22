@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "Wrapper_py/Module/Module.hpp"
+#include "Wrapper_py/Module/Task.hpp"
 
 std::string create_helper(const std::string& in_out, const std::string& type)
 {
@@ -58,40 +59,7 @@ std::string to_string(const aff3ct::module::Module& m, bool full)
 
 	for (size_t i = 0 ; i < m.tasks.size() ; i++)
 	{
-		message << "\t- Task " << i << "\n";
-		std::string name = m.tasks[i]->get_name();
-		message << rang::style::bold << rang::fg::magenta << "\t\t- Name         : " << name << rang::style::reset << "\n";
-		if (full)
-		{
-			message << "\t\t- Address       : " <<  std::hex << static_cast<void*>(m.tasks[i].get()) << "\n";
-			message << "\t\t- Module address: " <<  std::hex << static_cast<void*>(&m.tasks[i]->get_module()) << "\n";
-		}
-		if (m.tasks[i]->sockets.size() > 0)
-			message << rang::style::bold << rang::fg::blue << "\t\t- Sockets      : " << rang::style::reset <<  "\n";
-		else
-			message << rang::style::bold << rang::fg::blue << "\t\t- No Socket." << rang::style::reset << "\n";
-
-		for (size_t j = 0 ; j < m.tasks[i]->sockets.size() ; j++)
-		{
-			message << "\t\t\t- Socket " << j << "\n";
-			std::string type;
-			if (m.tasks[i]->get_socket_type(*m.tasks[i]->sockets[j]) == socket_t::SIN )
-				type = "in";
-			else if (m.tasks[i]->get_socket_type(*m.tasks[i]->sockets[j]) == socket_t::SOUT )
-				type = "out";
-
-			message << rang::style::bold << rang::fg::blue << "\t\t\t\t- Name              : " << m.tasks[i]->sockets[j]->get_name() << rang::style::reset << "\n";
-			message << "\t\t\t\t- Type              : " << type.c_str() << "\n";
-			message << "\t\t\t\t- Elements per frame: " << m.tasks[i]->sockets[j]->get_n_elmts()/m.get_n_frames() << "\n";
-			message << "\t\t\t\t- Data type         : " << m.tasks[i]->sockets[j]->get_datatype_string() << "\n";
-			if (full)
-			{
-				message << "\t\t\t\t- Data bytes        : " << m.tasks[i]->sockets[j]->get_databytes() << "\n";
-				message << "\t\t\t\t- Data ptr          : " << m.tasks[i]->sockets[j]->get_dataptr() << "\n";
-				message << "\t\t\t\t- Address            : " << std::hex << static_cast<void*>(m.tasks[i]->sockets[j].get()) << "\n\n";
-			}
-
-		}
+		message << Wrapper_Task::to_string(*m.tasks[i], i, full, "\t").c_str();
 	}
 	return message.str();
 }
