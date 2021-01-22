@@ -8,7 +8,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Specify bin path
-set (EXECUTABLE_OUTPUT_PATH bin/)
+set(EXECUTABLE_OUTPUT_PATH bin/)
+set(LIBRARY_OUTPUT_PATH lib/)
 
 # Link with the "Threads library (required to link with AFF3CT after)
 set(CMAKE_THREAD_PREFER_PTHREAD ON)

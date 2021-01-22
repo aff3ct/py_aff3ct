@@ -1,3 +1,6 @@
+import sys
+sys.path.insert(0, './lib')
+
 import numpy as np
 from math import sqrt
 from py_aff3ct.module.py_module import Py_Module

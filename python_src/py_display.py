@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
+sys.path.insert(0, './lib')
+
 import numpy as np
 import matplotlib.pyplot as plt
 from py_aff3ct.module.py_module import Py_Module
