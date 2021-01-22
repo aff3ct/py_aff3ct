@@ -5,7 +5,10 @@ using namespace aff3ct;
 PYBIND11_MODULE(py_aff3ct, m){
 	// Split in two following https://pybind11.readthedocs.io/en/stable/advanced/misc.html#avoiding-c-types-in-docstrings
 	// for enhancing python doc
-	setControlMode(rang::control::Force);
+	setControlMode(rang::control::Off);
+	m.def("enable_colors", [](){setControlMode(rang::control::Force);});
+	m.def("disable_colors",[](){setControlMode(rang::control::Off);});
+
 	std::vector<wrapper::Wrapper_py*> wrappers;
 	py::module_ m0 = m.def_submodule("tools");
 	std::unique_ptr<wrapper::Wrapper_py> wrapper_gngi       (new wrapper::Wrapper_Gaussian_noise_generator_implem(m0));

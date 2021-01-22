@@ -100,4 +100,39 @@ void Wrapper_Socket
 	}, "Binds the socket to the numpy array 'array' with priority 'priority'.", "array"_a);
 	this->def_property_readonly("name", &aff3ct::module::Socket::get_name);
 	this->def("__deepcopy__", [](const aff3ct::module::Socket &self, py::dict) {return aff3ct::module::Socket(self);}, "memo"_a);
+	this->def("info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s).c_str());}, "Print module information.");
+	this->def("full_info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s, true).c_str());}, "Print module information with additionnal information.");
+
 };
+
+std::string Wrapper_Socket
+::to_string(const aff3ct::module::Socket& s, int idx, bool full, const std::string prefix)
+{
+	std::stringstream message;
+	message << prefix.c_str() << "- Socket ";
+	if (idx >= 0)
+		message << idx;
+	message << "\n";
+
+	aff3ct::module::Task&   t = s.get_task();
+	aff3ct::module::Module& m = t.get_module();
+	
+	std::string type;
+	if (t.get_socket_type(s) == socket_t::SIN )
+		type = "in";
+	else if (t.get_socket_type(s) == socket_t::SOUT )
+		type = "out";
+
+	message  << prefix.c_str() << rang::style::bold << rang::fg::blue << "\t- Name              : " << s.get_name() << rang::style::reset << "\n";
+	message  << prefix.c_str() << "\t- Type              : " << type.c_str() << "\n";
+	message  << prefix.c_str() << "\t- Elements per frame: " << s.get_n_elmts()/m.get_n_frames() << "\n";
+	message  << prefix.c_str() << "\t- Data type         : " << s.get_datatype_string() << "\n";
+	if (full)
+	{
+		message  << prefix.c_str() << "\t- Data bytes        : " << s.get_databytes() << "\n";
+		message  << prefix.c_str() << "\t- Data ptr          : " << s.get_dataptr() << "\n";
+		message  << prefix.c_str() << "\t- Address           : " << std::hex << static_cast<const void*>(&s) << "\n\n";
+	}
+
+	return message.str();
+}

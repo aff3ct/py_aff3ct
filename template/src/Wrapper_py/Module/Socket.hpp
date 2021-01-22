@@ -19,7 +19,10 @@ class Wrapper_Socket : public Wrapper_py,
 	Wrapper_Socket(py::handle scope);
 	virtual void definitions();
 	virtual ~Wrapper_Socket() = default;
+
+	static std::string to_string    (const aff3ct::module::Socket& s, int idx=-1, bool full = false, const std::string prefix = "");
 };
 }
 }
+
 #endif //BIND_SOCKET_HPP_

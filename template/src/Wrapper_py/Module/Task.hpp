@@ -36,8 +36,11 @@ class Wrapper_Task : public Wrapper_py,
 	Wrapper_Task(py::handle scope);
 	virtual void definitions();
 	virtual ~Wrapper_Task() = default;
+
+	static std::string to_string    (const aff3ct::module::Task& s, int idx=-1, bool full = false, const std::string prefix = "");
 };
 }
 }
+
 
 #endif //BIND_TASK_HPP_
