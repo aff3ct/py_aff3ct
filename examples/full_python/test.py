@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.insert(0, '../build/lib')
+sys.path.insert(0, '../../build/lib')
 
 from math import sqrt
 from py_aff3ct.module.py_module import Py_Module

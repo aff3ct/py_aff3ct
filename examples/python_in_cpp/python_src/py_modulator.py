@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, './lib')
+sys.path.insert(0, '../../../build/lib')
 
 import numpy as np
 from math import sqrt

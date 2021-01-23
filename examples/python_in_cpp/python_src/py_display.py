@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-sys.path.insert(0, './lib')
+sys.path.insert(0, '../../../build/lib')
 
 import numpy as np
 import matplotlib.pyplot as plt

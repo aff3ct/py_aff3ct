@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
-sys.path.insert(0, '../build/lib')
+sys.path.insert(0, '../../build/lib')
 
 import numpy as np
 import py_aff3ct as aff3ct

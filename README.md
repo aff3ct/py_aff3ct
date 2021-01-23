@@ -28,11 +28,6 @@ Copy the `CMake` configuration files from the AFF3CT build
 	$ mkdir cmake && mkdir cmake/Modules
 	$ cp lib/aff3ct/build/lib/cmake/aff3ct-*/* cmake/Modules
 
-Install the `Python` dependencies on Ubuntu 20.04 LTS
-
-	$ sudo apt install python3-pip
-	$ pip3 install --user -r requirements.txt
-
 Compile the code on Linux/MacOS/MinGW:
 
 	$ mkdir build && cd build
@@ -41,19 +36,10 @@ Compile the code on Linux/MacOS/MinGW:
 
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
-	$ cd ../test
-	$ python3 test_bfer.py
 
-The compiled binary is in `build/bin/py_aff3ct_test`.
+The compiled library is in `build/lib/py_aff3ct*.so`.
 
-For the binary to find your `Python` sources, you should add them to your
-`PYTHONPATH` (in this example, the Python source files are located in the
-`python_src` folder)
+Check if it works:
 
-	$ export PYTHONPATH=$PYTHONPATH:"path_to_your_python_src"
-
-In Jupyter environment, set the path to your `build` directory then import the `py_affect`library
-```python
-import py_aff3ct
-help(py_aff3ct)
-```
+	$ cd ../examples/full_python/
+	$ python3 test.py
