@@ -1,6 +1,9 @@
-from math import sqrt
-from py_aff3ct import Py_Module
+import sys
+sys.path.insert(0, '../../../build/lib')
+
 import numpy as np
+from math import sqrt
+from py_aff3ct.module.py_module import Py_Module
 
 class Modulator(Py_Module):
 	def modulate(self, b, x):
@@ -14,11 +17,3 @@ class Modulator(Py_Module):
 		sb = self.create_socket_in (t_mod, "b", N, np.int32  )
 		sx = self.create_socket_out(t_mod, "x", N, np.float32)
 		self.create_codelet(t_mod, lambda m,l,f: m.modulate(l[0], l[1]))
-   
-        
-m = Modulator(16)
-m.tasks[0].debug = True
-sh = np.shape(m["modulate::b"][:])
-b = np.random.randint(0,2,sh, np.int32)
-m["modulate::b"].bind(b)
-m("modulate").exec()
