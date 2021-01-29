@@ -561,7 +561,7 @@ def gen_definitions(dict):
 	return defs
 
 def is_leaf(dict):
-	return "derivedcompoundref" in dict["compounddef"]
+	return "derivedcompoundref" not in dict["compounddef"]
 
 def get_include_path(dict, prefix):
 	dbdir,_ = os.path.split(dict["compounddef"]["location"]["@file"])
