@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
 import os
+import re
 import filecmp
 from subprocess import call
 
@@ -403,3 +404,186 @@ def src_repair(template_src_path, src_path, verbose):
 			call('cp -R ' + template_src_path + ' ' + src_path, shell=True)
 		else:
 			print("Template folder not found.")
+
+# NEW !!!!
+
+def get_name(dict):
+	val = dict["compounddef"]["compoundname"]
+	return val
+
+def get_short_name(dict):
+	name = get_name(dict)
+	short_name = name.split("::")[2]
+	return short_name
+
+def is_abstract(dict):
+	return "@abstract" in dict["compounddef"].keys()
+
+def has_template(dict):
+	return "templateparamlist" in dict["compounddef"].keys()
+
+def extract_type(val):
+	type_val = ""
+	if type(val) is dict:
+		if "#text" in val.keys():
+			if "const" in val["#text"]:
+				type_val += "const " + val["ref"]["#text"]
+			else:
+				type_val += val["ref"]["#text"]
+			if "&" in val["#text"]:
+				type_val += "&"
+			elif "*" in val["#text"]:
+				type_val += "*"
+	else:
+		type_val = val
+	return type_val
+
+def gen_template(dict):
+	full    = ""
+	medium  = ""
+	short   = ""
+	default = ""
+
+	if has_template(dict):
+
+		templates_list = dict["compounddef"]["templateparamlist"]["param"]
+		if type(templates_list) is not list:
+			templates_list = [templates_list]
+
+		default = "<"
+		for tp in templates_list:
+			if not "defval" in tp.keys():
+				message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + get_short_name(dict) + " has a template without default value." + bcolors.ENDC
+				raise RuntimeError(message)
+			default += extract_type(tp["defval"]) + ","
+		default = default[:-1] + ">"
+
+		short = "<"
+		for tp in templates_list:
+			short += tp["type"].split(" ")[1] + ","
+		short = short[:-1] + ">"
+
+		medium = "template <"
+		for tp in templates_list:
+			medium += tp["type"] + ","
+		medium = medium[:-1] + ">"
+
+		full = "template <"
+		for tp in templates_list:
+			full += tp["type"] + " = " + extract_type(tp["defval"]) + ","
+		full = full[:-1] + ">"
+
+	return {"full":    full,
+	        "medium":  medium,
+	        "short":   short,
+	        "default": default}
+
+def get_parent(dict):
+	if "basecompoundref" in dict["compounddef"].keys():
+		if type(dict["compounddef"]["basecompoundref"]) is not list:
+			val = dict["compounddef"]["basecompoundref"]
+		else:
+			val = dict["compounddef"]["basecompoundref"][0]
+		return val["#text"].split("<")[0]
+	return ""
+
+def get_dtor_trick(dict):
+	dtor_trick = ""
+
+	sectiondef_list = dict["compounddef"]["sectiondef"]
+	if type(sectiondef_list) is not list:
+		sectiondef_list = [sectiondef_list]
+
+	dtor_name = "~" + get_short_name(dict)
+	for sd in sectiondef_list:
+		if (sd["@kind"] == "private-func"):
+			memberdef_list = sd["memberdef"]
+			if type(memberdef_list) is not list:
+				memberdef_list = [memberdef_list]
+			for mb in memberdef_list:
+				if mb["name"] == dtor_name:
+					message = bcolors.OKBLUE + "(II) Protected destructor for class " + get_name(dict) + '.'+ bcolors.ENDC
+					print(message)
+					dtor_trick = ", std::unique_ptr<" + get_name(dict) + gen_template(dict)['short'] + ", py::nodelete>"
+	return dtor_trick
+
+def gen_constructors(dict):
+	sectiondef_list = dict["compounddef"]["sectiondef"]
+	if type(sectiondef_list) is not list:
+		sectiondef_list = [sectiondef_list]
+
+	class_name = get_short_name(dict)
+
+	constructors = []
+	for sd in sectiondef_list:
+		if (sd["@kind"] == "public-func"):
+			memberdef_list = sd["memberdef"]
+			if type(memberdef_list) is not list:
+				memberdef_list = [memberdef_list]
+
+			for mb in memberdef_list:
+				if mb["name"] == class_name and "param" in mb.keys():
+					args = []
+					params_list = mb["param"]
+					if type(params_list) is not list:
+						params_list = [params_list]
+					for a in params_list:
+						name_val = ""
+						if "declname" in a.keys():
+							name_val = a["declname"]
+
+						type_val = ""
+						if "type" in a.keys():
+							type_val = extract_type (a["type"])
+
+						default_val = ""
+						if "defval" in a.keys():
+							default_val = a["defval"]
+
+						args.append({
+							"name": name_val,
+							"type": type_val,
+							"default": default_val
+						})
+
+					constructors.append({"args": args})
+	return constructors
+
+def gen_definitions(dict):
+	defs = []
+	if "basecompoundref" in dict["compounddef"]:
+		refs_list = dict["compounddef"]["basecompoundref"]
+		if type(refs_list) is not list:
+			refs_list = [refs_list]
+		for ref in refs_list:
+			if 'aff3ct::tools::Interface' in ref["#text"]:
+				defs.append(ref["#text"])
+	return defs
+
+def is_leaf(dict):
+	return "derivedcompoundref" in dict["compounddef"]
+
+def get_include_path(dict, prefix):
+	dbdir,_ = os.path.split(dict["compounddef"]["location"]["@file"])
+	if prefix:
+		return prefix + "/" + dbdir
+	else:
+		return dbdir
+
+def build_modules2(data, install_path, path, includes):
+	dict = {}
+	for key, value in data.items():
+		if key in includes:
+			dict[key] = {"name":         get_name        (value),
+			             "short_name":   get_short_name  (value),
+			             "is_abstract":  is_abstract     (value),
+			             "has_template": has_template    (value),
+			             "template":     gen_template    (value),
+			             "parent":       get_parent      (value),
+			             "dtor_trick":   get_dtor_trick  (value),
+			             "constructors": gen_constructors(value),
+			             "definitions":  gen_definitions (value),
+			             "leaf":         is_leaf         (value),
+			             "include_path": get_include_path(value, path),
+			             "mk_dir_path":  get_include_path(value, install_path + "/" + path) }
+	return dict

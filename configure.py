@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser(description=text)
 parser.add_argument(      "--verbose", help = "Set the configuration versose."          , action="store_true")
 parser.add_argument(        "--clean", help = "Clean before doing consfiguration."      , action="store_true")
 parser.add_argument(      "--db-path", help = "Path of the aff3ct JSON file."           , default= command_path + "/lib/aff3ct/scripts/abi/db.json")
+parser.add_argument("--doxy-xml-path", help = "Path of the Doxygen XML files."          , default= command_path + "/lib/aff3ct/doc/build/doxygen/xml/")
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
 
 parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Source', 'Modem', 'Channel', 'Encoder', 'Decoder'])
@@ -93,3 +94,102 @@ full_dict.update(modules)
 
 aff3ct_tools.write_py_aff3ct_hpp(full_dict,                           command_path, args.template_path, args.verbose)
 aff3ct_tools.write_py_aff3ct_cpp(tools, tools_tree, modules, tree, command_path, args.template_path, args.verbose)
+
+# NEW !!!!
+import re
+from os import listdir
+from os.path import isfile, isdir, join
+import xmltodict
+
+if not isdir(args.doxy_xml_path):
+	print("The '" + args.doxy_xml_path + "' path is not a directory, please provide a valid path.")
+	exit(-1)
+
+# build a map of Doxygen XML classes
+doxyFiles = [f for f in listdir(args.doxy_xml_path) if isfile(join(args.doxy_xml_path, f))]
+
+if len(doxyFiles) == 0:
+	print("The '" + args.doxy_xml_path + "' dir. is empty, no documentation files have been generated.")
+	exit(-1)
+
+doxygen = {}
+for f in doxyFiles:
+	pattern = re.compile("^class|^struct")
+	if pattern.match(f):
+		realName = re.sub( "^class",   "",        f)
+		realName = re.sub("^struct",   "", realName)
+		realName = re.sub(   "_1_1", "::", realName)
+		realName = re.sub(  "_3_01", "< ", realName)
+		realName = re.sub(  "_01_4", " >", realName)
+		realName = re.sub(     "__",  "_", realName)
+		realName = re.sub(   ".xml",   "", realName)
+
+		pattern = re.compile("^aff3ct::module::|^aff3ct::tools::")
+		if pattern.match(realName):
+			data = open(join(args.doxy_xml_path, f), 'r').read()
+			dict = xmltodict.parse(data)
+			doxygen[realName] = dict["doxygen"]
+
+			if "doxygen" in dict:
+				if "compounddef" in dict["doxygen"]:
+					if "compoundname" in dict["doxygen"]["compounddef"]:
+						if dict["doxygen"]["compounddef"]["compoundname"] != realName:
+							print("There is a problem, salut 1!")
+							exit(-1)
+					else:
+						print("There is a problem, salut 2!")
+						exit(-1)
+				else:
+					print("There is a problem, salut 3!")
+					exit(-1)
+			else:
+				print("There is a problem, salut 4!")
+				exit(-1)
+
+jsonStr = json.dumps(doxygen, sort_keys=True)
+f = open("doxygen.json", "w")
+f.write(jsonStr)
+f.close()
+
+with open("doxygen.json", "r") as read_file:
+	data = json.load(read_file)
+
+includes = []
+for i in args.include_tool:
+	pattern = re.compile("^aff3ct::tools::"+i)
+	for key, value in data.items():
+		if pattern.match(key):
+			includes.append(key)
+
+for i in args.exclude_tool:
+	pattern = re.compile("^aff3ct::tools::"+i)
+	for j in includes:
+		if pattern.match(j):
+			includes.remove(j)
+
+tools2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", includes)
+
+jsonStr = json.dumps(tools2, sort_keys=True)
+f = open("dbg_tools.json", "w")
+f.write(jsonStr)
+f.close()
+
+includes = []
+for i in args.include_module:
+	pattern = re.compile("^aff3ct::module::"+i)
+	for key, value in data.items():
+		if pattern.match(key):
+			includes.append(key)
+
+for i in args.exclude_module:
+	pattern = re.compile("^aff3ct::module::"+i)
+	for j in includes:
+		if pattern.match(j):
+			includes.remove(j)
+
+module2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", includes)
+
+jsonStr = json.dumps(module2, sort_keys=True)
+f = open("dbg_module.json", "w")
+f.write(jsonStr)
+f.close()
