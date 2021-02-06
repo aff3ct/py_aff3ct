@@ -229,22 +229,23 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		wrapper_cpp = ""
 
 		class_constructors = module['constructors']
-		for constructor in class_constructors:
-			arg_types = ""
-			arg_init  = ""
-			new_line  = "\n\tthis->def(py::init<{types}>(){init}, py::return_value_policy::reference);"
-			arg_nbr = len(constructor['args'])
-			for a_idx in range(arg_nbr):
-				arg_types += constructor['args'][a_idx]['type'] + ", "
-				arg_init  += '"' + constructor['args'][a_idx]['name'] +'"_a' + constructor['args'][a_idx]['default'] + ', '
-			arg_types = arg_types[:-2]
-			arg_init  = arg_init [:-2]
-			new_line  = new_line.replace("{types}", arg_types)
-			if arg_init:
-				arg_init = "," + arg_init
+		if not module['is_abstract']:
+			for constructor in class_constructors:
+				arg_types = ""
+				arg_init  = ""
+				new_line  = "\n\tthis->def(py::init<{types}>(){init}, py::return_value_policy::reference);"
+				arg_nbr = len(constructor['args'])
+				for a_idx in range(arg_nbr):
+					arg_types += constructor['args'][a_idx]['type'] + ", "
+					arg_init  += '"' + constructor['args'][a_idx]['name'] +'"_a' + constructor['args'][a_idx]['default'] + ', '
+				arg_types = arg_types[:-2]
+				arg_init  = arg_init [:-2]
+				new_line  = new_line.replace("{types}", arg_types)
+				if arg_init:
+					arg_init = "," + arg_init
 
-			new_line  = new_line.replace("{init}", arg_init)
-			init_lines += new_line
+				new_line  = new_line.replace("{init}", arg_init)
+				init_lines += new_line
 		if init_lines:
 			init_lines += '\n'
 
@@ -263,7 +264,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		wrapper_cpp = ""
 		with open(template_path + "/Wrapper_template.cpp","r") as f:
 			wrapper_cpp = f.read()
-			if 'parent' in module.keys():
+			if 'parent' in module.keys() and module['parent']:
 				wrapper_cpp = wrapper_cpp.replace("{parent}", "," + module['parent'])
 			else:
 				wrapper_cpp = wrapper_cpp.replace("{parent}", "")
@@ -459,7 +460,7 @@ def extract_type(val):
 			if "const" in val["#text"]:
 				type_val += "const "
 
-			# type_val += val["ref"]["#text"]
+			type_val += val["ref"]["#text"]
 
 			# if "<" in val["#text"]:
 			# 	type_val += "< " + val["#text"].split("<")[1].split(">")[0] + "> "
