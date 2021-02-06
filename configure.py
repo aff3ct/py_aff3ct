@@ -19,7 +19,7 @@ parser.add_argument("--doxy-xml-path", help = "Path of the Doxygen XML files."  
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
 
 parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Source', 'Modem', 'Channel', 'Encoder', 'Decoder'])
-parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter'])
+parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter', 'Decoder_LDPC_BP_flooding_inter', 'Decoder_LDPC_BP_horizontal_layered_inter', 'Decoder_LDPC_BP_vertical_layered_inter', 'Decoder_LDPC_BP_flooding_SPA', 'Decoder_LDPC_bit_flipping_hard'])
 parser.add_argument( "--include-tool", nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Sparse_matrix', 'Pattern_polar_i', 'Noise', 'BCH_polynomial_generator', 'RS_polynomial_generator', 'Polar_code'])
 parser.add_argument( "--exclude-tool", nargs="+", help = "List of aff3ct Tools to be excluded from the wrapper. (prioritary over --include-tool). Example : --exclude-tool Constellation", default=[])
 parser.add_argument( "--include-def", nargs="+", help = "List of aff3ct defs to be wrapped. Example : --include-def get_trellis", default=['get_trellis'])
@@ -62,38 +62,38 @@ if args.verbose:
 include_tools  = args.include_tool
 exclude_tools  = args.exclude_tool
 tools_tree = aff3ct_tools.build_inheritence_tree(data, "tools", include_tools, exclude_tools, {}, True)
-if args.verbose:
-	aff3ct_tools.print_tree(tools_tree)
+# if args.verbose:
+# 	aff3ct_tools.print_tree(tools_tree)
 
-tools = aff3ct_tools.build_modules(data, tools_tree, "", {}, command_path + "/src", "Wrapper_py/Tools", {}, args.include_def)
-aff3ct_tools.make_dir_tree      (tools,                                         args.verbose)
-aff3ct_tools.write_hpp_wrappers (tools,                     args.template_path              )
-aff3ct_tools.write_cpp_wrappers (tools,                     args.template_path              )
+# tools = aff3ct_tools.build_modules(data, tools_tree, "", {}, command_path + "/src", "Wrapper_py/Tools", {}, args.include_def)
+# aff3ct_tools.make_dir_tree      (tools,                                         args.verbose)
+# aff3ct_tools.write_hpp_wrappers (tools,                     args.template_path              )
+# aff3ct_tools.write_cpp_wrappers (tools,                     args.template_path              )
 
-existing_tools = tools.copy()
-existing_tools["aff3ct::tools::Gaussian_noise_generator_implem"] = {}
-existing_tools["aff3ct::tools::Frozenbits_generator"] = {}
-existing_tools["aff3ct::tools::Sequence"] = {}
+# existing_tools = tools.copy()
+# existing_tools["aff3ct::tools::Gaussian_noise_generator_implem"] = {}
+# existing_tools["aff3ct::tools::Frozenbits_generator"] = {}
+# existing_tools["aff3ct::tools::Sequence"] = {}
 
 include_modules  = args.include_module
 exclude_modules  = args.exclude_module
 tree = aff3ct_tools.build_inheritence_tree(data, "Module", include_modules, exclude_modules, {}, True)
-if args.verbose:
-	aff3ct_tools.print_tree(tree)
+# if args.verbose:
+# 	aff3ct_tools.print_tree(tree)
 
-modules = aff3ct_tools.build_modules(data, tree, "aff3ct::module::Module", {}, command_path + "/src", "Wrapper_py/Module", existing_tools, args.include_def)
+# modules = aff3ct_tools.build_modules(data, tree, "aff3ct::module::Module", {}, command_path + "/src", "Wrapper_py/Module", existing_tools, args.include_def)
 
-aff3ct_tools.make_dir_tree      (modules,                                         args.verbose)
+# aff3ct_tools.make_dir_tree      (modules,                                         args.verbose)
 
-aff3ct_tools.write_hpp_wrappers (modules,                     args.template_path ,args.verbose)
-aff3ct_tools.write_cpp_wrappers (modules,                     args.template_path ,args.verbose)
+# aff3ct_tools.write_hpp_wrappers (modules,                     args.template_path ,args.verbose)
+# aff3ct_tools.write_cpp_wrappers (modules,                     args.template_path ,args.verbose)
 
-full_dict = {}
-full_dict.update(tools)
-full_dict.update(modules)
+# full_dict = {}
+# full_dict.update(tools)
+# full_dict.update(modules)
 
-aff3ct_tools.write_py_aff3ct_hpp(full_dict,                           command_path, args.template_path, args.verbose)
-aff3ct_tools.write_py_aff3ct_cpp(tools, tools_tree, modules, tree, command_path, args.template_path, args.verbose)
+# aff3ct_tools.write_py_aff3ct_hpp(full_dict,                           command_path, args.template_path, args.verbose)
+# aff3ct_tools.write_py_aff3ct_cpp(tools, tools_tree, modules, tree, command_path, args.template_path, args.verbose)
 
 # NEW !!!!
 import re
@@ -116,13 +116,7 @@ doxygen = {}
 for f in doxyFiles:
 	pattern = re.compile("^class|^struct")
 	if pattern.match(f):
-		realName = re.sub( "^class",   "",        f)
-		realName = re.sub("^struct",   "", realName)
-		realName = re.sub(   "_1_1", "::", realName)
-		realName = re.sub(  "_3_01", "< ", realName)
-		realName = re.sub(  "_01_4", " >", realName)
-		realName = re.sub(     "__",  "_", realName)
-		realName = re.sub(   ".xml",   "", realName)
+		realName = aff3ct_tools.doxyname_to_stdname(f)
 
 		pattern = re.compile("^aff3ct::module::|^aff3ct::tools::")
 		if pattern.match(realName):
@@ -146,6 +140,22 @@ for f in doxyFiles:
 				print("There is a problem, salut 4!")
 				exit(-1)
 
+# add the missing `derivedcompoundref` field to the Doxygen JSON
+for key, value in doxygen.items():
+	if "derivedcompoundref" not in value["compounddef"].keys():
+		for key2, value2 in doxygen.items():
+			if key != key2 and "basecompoundref" in value2["compounddef"].keys():
+				refs_list = value2["compounddef"]["basecompoundref"]
+				if type(refs_list) is not list:
+					refs_list = [refs_list]
+				for ref in refs_list:
+					if ref["#text"].split("<")[0] == key:
+						elmt = {"#text": key2}
+						if "derivedcompoundref" not in value["compounddef"].keys():
+							value["compounddef"]["derivedcompoundref"] = [elmt]
+						else:
+							value["compounddef"]["derivedcompoundref"].append(elmt)
+
 jsonStr = json.dumps(doxygen, sort_keys=True)
 f = open("doxygen.json", "w")
 f.write(jsonStr)
@@ -154,42 +164,38 @@ f.close()
 with open("doxygen.json", "r") as read_file:
 	data = json.load(read_file)
 
-includes = []
-for i in args.include_tool:
-	pattern = re.compile("^aff3ct::tools::"+i)
-	for key, value in data.items():
-		if pattern.match(key):
-			includes.append(key)
+classes_list = aff3ct_tools.recursive_build_classes_list(data, args.include_tool, args.exclude_tool, "aff3ct::tools::")
+tools2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", classes_list)
 
-for i in args.exclude_tool:
-	pattern = re.compile("^aff3ct::tools::"+i)
-	for j in includes:
-		if pattern.match(j):
-			includes.remove(j)
-
-tools2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", includes)
-
-jsonStr = json.dumps(tools2, sort_keys=True)
+jsonStr = json.dumps(tools2)
 f = open("dbg_tools.json", "w")
 f.write(jsonStr)
 f.close()
 
-includes = []
-for i in args.include_module:
-	pattern = re.compile("^aff3ct::module::"+i)
-	for key, value in data.items():
-		if pattern.match(key):
-			includes.append(key)
+aff3ct_tools.make_dir_tree      (tools2,                     args.verbose)
+aff3ct_tools.write_hpp_wrappers (tools2, args.template_path              )
+aff3ct_tools.write_cpp_wrappers (tools2, args.template_path              )
 
-for i in args.exclude_module:
-	pattern = re.compile("^aff3ct::module::"+i)
-	for j in includes:
-		if pattern.match(j):
-			includes.remove(j)
+existing_tools = tools2.copy()
+existing_tools["aff3ct::tools::Gaussian_noise_generator_implem"] = {}
+existing_tools["aff3ct::tools::Frozenbits_generator"] = {}
+existing_tools["aff3ct::tools::Sequence"] = {}
 
-module2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", includes)
+classes_list = aff3ct_tools.recursive_build_classes_list(data, args.include_module, args.exclude_module, "aff3ct::module::")
+module2 = aff3ct_tools.build_modules2(data, command_path + "/src", "Wrapper_py", classes_list, existing_tools)
 
-jsonStr = json.dumps(module2, sort_keys=True)
+jsonStr = json.dumps(module2)
 f = open("dbg_module.json", "w")
 f.write(jsonStr)
 f.close()
+
+aff3ct_tools.make_dir_tree     (module2,                     args.verbose)
+aff3ct_tools.write_hpp_wrappers(module2, args.template_path, args.verbose)
+aff3ct_tools.write_cpp_wrappers(module2, args.template_path, args.verbose)
+
+full_dict = {}
+full_dict.update(tools2)
+full_dict.update(module2)
+
+aff3ct_tools.write_py_aff3ct_hpp(full_dict, command_path, args.template_path, args.verbose)
+aff3ct_tools.write_py_aff3ct_cpp(tools2, tools_tree, module2, tree, command_path, args.template_path, args.verbose)
