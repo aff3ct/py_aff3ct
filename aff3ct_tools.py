@@ -453,46 +453,109 @@ def is_abstract(entry):
 def has_template(entry):
 	return "templateparamlist" in entry["compounddef"].keys()
 
+#def extract_type(val):
+#	type_val = ""
+#	if type(val) is dict:
+#		if "#text" in val.keys():
+#			if "const" in val["#text"]:
+#				type_val += "const "
+#
+#			type_val += val["ref"]["#text"]
+#
+#			# if "<" in val["#text"]:
+#			# 	type_val += "< " + val["#text"].split("<")[1].split(">")[0] + "> "
+#
+#
+#			match = re.compile('<(.*)>').search(val["#text"])
+#			if match:
+#				# print(match.group(1).strip())
+#				type_val += "< " + match.group(1) + "> "
+#
+#			# match = re.compile('<(.*)>').search(val["#text"])
+#			# if match:
+#			# 	contents = match.group(1).strip()
+#			# 	print(contents)
+#			# 	if contents == "*" or contents == "&" or contents == "":
+#			# 		type_val += "< " + val["ref"]["#text"] + contents + "> "
+#			# 	else:
+#			# 		type_val += val["ref"]["#text"]
+#			# 		type_val += "< " + contents + "> "
+#			# else:
+#			# 	type_val += val["ref"]["#text"]
+#
+#
+#			# if val["#text"][0] == "<" and val["#text"][len(val["#text"]) -1] == ">":
+#			# 	type_val += val["#text"]
+#
+#			if "&" in val["#text"]:
+#				type_val += "&"
+#			elif "*" in val["#text"]:
+#				type_val += "*"
+#	else:
+#		type_val = val
+#	return type_val
+
 def extract_type(val):
 	type_val = ""
+	is_const = False
+	is_ref   = False
+	is_ptr   = False
+	template = ""
+	has_template = False
+	container = ""
+	has_container = False
+
 	if type(val) is dict:
 		if "#text" in val.keys():
-			if "const" in val["#text"]:
+			val_text = val["#text"]
+			if val["#text"].startswith("const"):
+				is_const = True
+				val_text = val_text[5:]
+
+			if val["#text"].endswith("&"):
+				is_ref = True
+				val_text = val_text[:-1:]
+
+			if val["#text"].endswith("*"):
+				is_ptr = True
+				val_text = val_text[:-1:]
+
+			val_text = val_text.replace(" ", "")
+			val_text = val_text.replace("\n", "")
+			val_text = val_text.replace("\t", "")
+			val_text = val_text.replace("\r", "")
+
+			if val_text:
+				if val_text.startswith("<") and val_text.startswith("<"):
+					has_template = True
+					template = val_text
+				else:
+					has_container = True
+					container = val_text.split("<")[0]
+					val_text = val_text[len(container)+1:-1] #Also remove <>
+
+			if is_const:
 				type_val += "const "
+			
+			if has_container:
+				type_val += container + "<"
+				new_val = {"#text": val_text,
+							"ref"  : val["ref"]}
+				type_val += extract_type(new_val) + ">"
+			else:
+				type_val += val["ref"]["#text"]
+			
+			if has_template:
+				type_val += template
 
-			type_val += val["ref"]["#text"]
-
-			# if "<" in val["#text"]:
-			# 	type_val += "< " + val["#text"].split("<")[1].split(">")[0] + "> "
-
-
-			match = re.compile('<(.*)>').search(val["#text"])
-			if match:
-				# print(match.group(1).strip())
-				type_val += "< " + match.group(1) + "> "
-
-			# match = re.compile('<(.*)>').search(val["#text"])
-			# if match:
-			# 	contents = match.group(1).strip()
-			# 	print(contents)
-			# 	if contents == "*" or contents == "&" or contents == "":
-			# 		type_val += "< " + val["ref"]["#text"] + contents + "> "
-			# 	else:
-			# 		type_val += val["ref"]["#text"]
-			# 		type_val += "< " + contents + "> "
-			# else:
-			# 	type_val += val["ref"]["#text"]
-
-
-			# if val["#text"][0] == "<" and val["#text"][len(val["#text"]) -1] == ">":
-			# 	type_val += val["#text"]
-
-			if "&" in val["#text"]:
-				type_val += "&"
-			elif "*" in val["#text"]:
+			if is_ptr:
 				type_val += "*"
+
+			if is_ref:
+				type_val += "&"
 	else:
 		type_val = val
+	
 	return type_val
 
 def gen_template(entry):
