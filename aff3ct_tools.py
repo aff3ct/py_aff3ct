@@ -16,182 +16,6 @@ class bcolors:
     BOLD      = '\033[1m'
     UNDERLINE = '\033[4m'
 
-def build_inheritence_tree(data, template, include, exclude, tree, use_flt):
-	for key, value in data.items():
-		res = [s for s in include if s == value["class_short_name"]]
-		if not res and use_flt:
-			continue
-
-		res = [s for s in exclude if s in value["class_short_name"]]
-		if res:
-			continue
-
-		if("tool" in template):
-			tree[key] = {}
-			tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
-		elif "class_inheritence" in value:
-			for s in value["class_inheritence"]:
-				short_class_inh = s.replace("public ", "")
-				short_class_inh = short_class_inh.split("::")[-1]
-				short_class_inh = short_class_inh.split('<')[0]
-				if (template == short_class_inh):
-					tree[key] = {}
-					tree[key] = build_inheritence_tree(data, value["class_short_name"], include, exclude, tree[key], False)
-					break
-
-	return tree
-
-def compute_tree_str(tree, str, prefix):
-	for key,value in tree.items():
-		str += prefix + "|- " + key + "\n"
-		str +=  compute_tree_str(value, "", "\t" + prefix )
-	if tree:
-		return str
-	else:
-		return ""
-
-def print_tree(tree):
-	print(compute_tree_str(tree, "", ""))
-
-def build_modules(data, tree, base, modules, install_path, path, existing_tools, defs):
-	for key, value in tree.items():
-		class_info   = data[key]
-		short_name   = class_info["class_short_name"]
-		name		 = class_info["class_name"]
-		if "class_templates" in class_info.keys():
-			has_template = class_info["class_nb_templates"] > 0
-		else:
-			has_template = False
-		full_template   = ""
-		medium_template = ""
-		short_template  = ""
-		default_template  = ""
-
-		module_info = {}
-		module_info['name'] = name
-		module_info['short_name' ] = short_name
-		module_info['is_abstract'] = class_info["class_is_abstract"]
-
-		if "class_inheritence" in class_info.keys():
-
-			matching = [s for s in class_info['class_inheritence'] if base in s]
-			if matching and base:
-				matching = matching[0]
-				matching = matching.replace("public ", "")
-				module_info['parent'] = matching
-
-			module_info['definitions'] = []
-			for s in class_info['class_inheritence']:
-				if "Interface" in s:
-					s_ = s.replace("public ", "")
-					s_ = s_.split("::")[-1]
-					s_ = s_.split("<")[0]
-					s_ = 'aff3ct::tools::' + s_
-					for _,method in data[s_]["class_methods"].items():
-						method_info = {}
-						method_info['short_name'] = method['method_short_name']
-						module_info['definitions'].append(method_info)
-						message = bcolors.OKGREEN + "(II) Definition " + method_info['short_name'] + " added to module " + module_info['name'] + '.'+ bcolors.ENDC
-						print(message)
-			if 'class_methods' in class_info.keys():
-				for _,method in class_info['class_methods'].items():
-					if method['method_access'] == 'public' and method['method_short_name'] in defs:
-						method_info = {}
-						method_info['short_name'] = method['method_short_name']
-						module_info['definitions'].append(method_info)
-						message = bcolors.OKGREEN + "(II) Definition " + method_info['short_name'] + " added to module " + module_info['name'] + '.'+ bcolors.ENDC
-						print(message)
-
-		module_info['has_template'] = has_template
-		module_info['include_path']  = path + '/' + short_name
-		module_info['mk_dir_path']   = install_path + '/' + path + '/' + short_name
-		if has_template:
-			try:
-				full_template, medium_template, short_template, default_template = get_templates(class_info)
-			except RuntimeError as err:
-				print(err)
-				continue
-			medium_template  = 'template <' + medium_template  + '>'
-			short_template   = '<' + short_template   + '>'
-			default_template = '<' + default_template + '>'
-
-		module_info['template'   ] = {}
-		module_info['template'   ]['full'   ] = full_template
-		module_info['template'   ]['medium' ] = medium_template
-		module_info['template'   ]['short'  ] = short_template
-		module_info['template'   ]['default'] = default_template
-		module_info['constructors'] = []
-
-		public_destructor = False
-		if "class_destructors" in class_info.keys():
-			for _, destructor in class_info["class_destructors"].items():
-				if destructor["method_access"] == "public":
-					public_destructor = True
-		if len(class_info["class_destructors"].items()) == 0:
-			message = bcolors.OKBLUE + "(II) No destructor for class " + module_info['name'] + '.'+ bcolors.ENDC
-			print(message)
-
-		dtor_trick = ""
-		if not public_destructor and len(class_info["class_destructors"].items()) > 0:
-			message = bcolors.OKBLUE + "(II) Protected destructor for class " + module_info['name'] + '.'+ bcolors.ENDC
-			print(message)
-			dtor_trick = ", std::unique_ptr<" + module_info['name'] + module_info['template']['short'] + ", py::nodelete>"
-		module_info['dtor_trick'] = dtor_trick
-
-		if module_info['is_abstract']:
-			message = bcolors.OKBLUE + "(II) Abstract class " + module_info['name'] + '.'+ bcolors.ENDC
-			print(message)
-		else:
-			if "class_constructors" in class_info.keys():
-				class_constructors = class_info["class_constructors"]
-				for _, constructor in class_constructors.items():
-					if constructor["method_access"] == "public":
-						arg_nbr = constructor["method_nb_arguments"]
-						args_description = []
-						every_arg_OK = True
-						for a_idx in range(arg_nbr):
-							arg_info = constructor["method_arguments"][a_idx]
-							reduced_arg_type = arg_info["arg_type"]
-							reduced_arg_type = reduced_arg_type.split("::")[-1]
-							reduced_arg_type = reduced_arg_type.split("<")[0]
-							reduced_arg_type = reduced_arg_type.split(" ")[0]
-							if "tool" in arg_info["arg_type"] and not any([x for x in existing_tools.keys() if reduced_arg_type in x]):
-								message = bcolors.WARNING + "(WW) Constructor not be wrapped for class " + class_info['class_name'] + "\t-> argument " + arg_info["arg_name"] + " has unknown type '" + arg_info["arg_type"] + "'." + bcolors.ENDC
-								print(message)
-								every_arg_OK = False
-								break
-
-							arg_type = ""
-							if arg_info["arg_is_const"]:
-								arg_type += "const "
-							arg_type += arg_info["arg_type"]
-
-							arg_default = ""
-							if "=" in arg_info["arg_signature"]:
-								arg_default = " = " + arg_info["arg_signature"].split(" = ")[1]
-
-							arg_description = {}
-							arg_description['name'   ] = arg_info["arg_name"]
-							arg_description['type'   ] = arg_type
-							arg_description['default'] = arg_default
-							args_description.append(arg_description)
-						if every_arg_OK:
-							module_info['constructors'].append({})
-							module_info['constructors'][-1]['args'] = args_description
-			else:
-				message = bcolors.WARNING + "(WW) Concrete class without constructor: " + module_info['name']+ '.'+ bcolors.ENDC
-				print(message)
-
-		if value:
-			module_info['leaf'] = False
-		else:
-			module_info['leaf'] = True
-		modules[name] = module_info
-		if value:
-			modules = build_modules(data, value, short_name, modules, install_path, path + '/' + short_name, existing_tools, defs)
-
-	return modules
-
 def make_dir_tree(modules, verbose = False):
 	for _,module in modules.items():
 		folder_path = module['mk_dir_path']
@@ -248,7 +72,6 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		if init_lines:
 			init_lines += '\n'
 
-
 		def_lines = ""
 		if 'definitions' in module.keys():
 			for def_ in module['definitions']:
@@ -269,7 +92,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 				wrapper_cpp = wrapper_cpp.replace("{parent}", "")
 
 			if module['has_template']:
-				footer = '#include "Tools/types.h"\ntemplate class aff3ct::wrapper::Wrapper_'+ module['short_name'         ] + module['template']['default']+';'
+				footer = '#include "Tools/types.h"\ntemplate class aff3ct::wrapper::Wrapper_'+ module['short_name'] + module['template']['default']+';'
 			else:
 				footer = ''
 			wrapper_cpp = wrapper_cpp.replace("{short_name}",       module['short_name'         ])
@@ -280,36 +103,11 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			wrapper_cpp = wrapper_cpp.replace("{footer}",           footer                       )
 			wrapper_cpp = wrapper_cpp.replace("{path}",             module['include_path'       ])
 			wrapper_cpp = wrapper_cpp.replace("{init_lines}",       init_lines                   )
-			wrapper_cpp = wrapper_cpp.replace("{def_lines}",        def_lines                   )
-			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'     ]        )
+			wrapper_cpp = wrapper_cpp.replace("{def_lines}",        def_lines                    )
+			wrapper_cpp = wrapper_cpp.replace("{dtor_trick}"      , module['dtor_trick'         ])
 
 		file_path = module['mk_dir_path'] + "/" + module['short_name'] + ".cpp"
 		write_if_different(file_path, wrapper_cpp, verbose)
-
-
-def get_templates(class_info):
-	full_template  = class_info["class_templates"][0]["template_signature"]
-	template_args  = class_info["class_templates"][0]["template_args"     ]
-	short_template = ""
-	default_template = ""
-
-	for arg in template_args:
-		new_short_template = arg["template_arg_name"].split(" ")[-1]
-		short_template += new_short_template  + ", "
-		if not arg["template_arg_default"]:
-			message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + class_info['class_name'] + " has a template without default value." + bcolors.ENDC
-			raise RuntimeError(message)
-		else:
-			default_template += arg["template_arg_default"] + ", "
-
-	short_template = short_template[:-2]
-	default_template = default_template[:-2]
-	medium_template = ""
-
-	for arg in template_args:
-		medium_template = medium_template + arg["template_arg_name"] + ", "
-	medium_template = medium_template[:-2]
-	return full_template, medium_template, short_template, default_template
 
 def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 	for key, value in tree.items():
@@ -345,7 +143,7 @@ def write_py_aff3ct_cpp(tools, tools_tree, modules, module_tree, command_path, t
 	file_path = command_path + "/src/py_aff3ct.cpp"
 	write_if_different(file_path, py_aff3ct_cpp, verbose)
 
-def write_py_aff3ct_hpp (modules, command_path, template_path, verbose = False):
+def write_py_aff3ct_hpp(modules, command_path, template_path, verbose = False):
 	other_includes = gen_py_aff3ct_hpp(modules)
 	with open(template_path + "/py_aff3ct_template.hpp","r") as f:
 			py_aff3ct_hpp = f.read()
@@ -358,7 +156,6 @@ def gen_py_aff3ct_hpp(modules):
 	for _,module in modules.items():
 		hpp_content += '#include "' + module['include_path'] + '/' + module['short_name'] + '.hpp"\n'
 	return hpp_content
-
 
 def write_if_different(file_path, new_content, verbose):
 	old_content = ""
@@ -405,8 +202,6 @@ def src_repair(template_src_path, src_path, verbose):
 		else:
 			print("Template folder not found.")
 
-# NEW !!!!
-
 def doxyname_to_stdname(doxyname):
 	stdname = re.sub("^class",  "",   doxyname)
 	stdname = re.sub("^struct", "",   stdname)
@@ -415,7 +210,6 @@ def doxyname_to_stdname(doxyname):
 	stdname = re.sub("_01_4",   " >", stdname)
 	stdname = re.sub("__",      "_",  stdname)
 	stdname = re.sub(".xml",    "",   stdname)
-
 	return stdname
 
 def recursive_build_classes_list(data, include_list, exclude_list, prefix, tree = {}):
@@ -461,7 +255,7 @@ def extract_type(val):
 	container = ""
 	has_container = False
 
-	if type(val) is dict:
+	if isinstance(val, dict):
 		if "#text" in val.keys():
 			val_text = val["#text"]
 			if val["#text"].startswith("const"):
@@ -531,7 +325,8 @@ def gen_template(entry):
 			if not "defval" in tp.keys():
 				message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + get_short_name(entry) + " has a template without default value." + bcolors.ENDC
 				raise RuntimeError(message)
-			default += extract_type(tp["defval"]) + ","
+			t = extract_type(tp["defval"]);
+			default += t + ","
 		default = default[:-1] + ">"
 
 		short = "<"
@@ -579,7 +374,8 @@ def get_parent(entry, dictio, classes_list):
 				return val_notp + tp["short"]
 			else:
 				return val_notp
-		elif "aff3ct::module::" in get_name(entry): # hack for the modules...
+		# hack for the modules...
+		elif "aff3ct::module::" in get_name(entry):
 			return "aff3ct::module::Module"
 		else:
 			return ""
@@ -643,7 +439,7 @@ def gen_constructors(entry, existing_tools):
 										tools_available = True
 										break
 								if not tools_available:
-									message = bcolors.WARNING + "(WW) Constructor not be wrapped for class '" + get_name(entry) + "'\t-> argument '" + name_val + "' has unknown type '" + type_val + "'" + bcolors.ENDC
+									message = bcolors.WARNING + "(WW) Constructor not be wrapped for class '" + get_name(entry) + "' -> argument '" + name_val + "' has unknown type '" + type_val + "'." + bcolors.ENDC
 									print(message)
 									continue
 							# end of the trick
@@ -682,7 +478,6 @@ def gen_definitions(entry, dictio):
 		for ref in refs_list:
 			if 'aff3ct::tools::Interface' in ref["#text"]:
 				interface = dictio[ref["#text"].split("<")[0]]
-
 				sd_list = interface["compounddef"]["sectiondef"]
 				if type(sd_list) is not list:
 					sd_list = [sd_list]
@@ -693,12 +488,13 @@ def gen_definitions(entry, dictio):
 							mb_list = [mb_list]
 						for mb in mb_list:
 							defs.append({"short_name": mb["name"]})
+							message = bcolors.OKGREEN + "(II) Definition '" + mb["name"] + "' added to module '" + get_name(entry) + "'." + bcolors.ENDC
+							print (message)
 	return defs
 
-def build_modules2(data, install_path, path, classes_list, existing_tools = {}):
+def build_modules(data, install_path, path, classes_list, existing_tools = {}):
 	dictio = {}
 	for class_name in classes_list:
-
 		dictio[class_name] = {"name":         get_name        (data[class_name]),
 		                      "short_name":   get_short_name  (data[class_name]),
 		                      "is_abstract":  is_abstract     (data[class_name]),
