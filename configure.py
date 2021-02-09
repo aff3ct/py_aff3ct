@@ -74,19 +74,20 @@ for f in doxyFiles:
 
 # add the missing `derivedcompoundref` field to the Doxygen JSON
 for key, value in doxygen.items():
-	if "derivedcompoundref" not in value["compounddef"].keys():
-		for key2, value2 in doxygen.items():
-			if key != key2 and "basecompoundref" in value2["compounddef"].keys():
-				refs_list = value2["compounddef"]["basecompoundref"]
-				if type(refs_list) is not list:
-					refs_list = [refs_list]
-				for ref in refs_list:
-					if ref["#text"].split("<")[0] == key:
-						elmt = {"#text": key2}
-						if "derivedcompoundref" not in value["compounddef"].keys():
-							value["compounddef"]["derivedcompoundref"] = [elmt]
-						else:
-							value["compounddef"]["derivedcompoundref"].append(elmt)
+	if "derivedcompoundref" in value["compounddef"].keys():
+		value["compounddef"]["derivedcompoundref"] = []
+	for key2, value2 in doxygen.items():
+		if key != key2 and "basecompoundref" in value2["compounddef"].keys():
+			refs_list = value2["compounddef"]["basecompoundref"]
+			if type(refs_list) is not list:
+				refs_list = [refs_list]
+			for ref in refs_list:
+				if ref["#text"].split("<")[0] == key:
+					elmt = {"#text": key2}
+					if "derivedcompoundref" not in value["compounddef"].keys():
+						value["compounddef"]["derivedcompoundref"] = [elmt]
+					else:
+						value["compounddef"]["derivedcompoundref"].append(elmt)
 
 tools_tree = {}
 tools_classes_list = aff3ct_tools.recursive_build_classes_list(doxygen, args.include_tool, args.exclude_tool, "aff3ct::tools::", tools_tree)
