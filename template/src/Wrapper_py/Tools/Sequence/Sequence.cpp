@@ -65,7 +65,7 @@ void Wrapper_Sequence
 		tools::Stats::show(self.get_modules_per_types(), true);
 	});
 
-	this->def("get_tasks_per_types", &aff3ct::tools::Sequence::get_tasks_per_types);
+	this->def("get_tasks_per_types", &aff3ct::tools::Sequence::get_tasks_per_types, py::return_value_policy::reference);
 
 	this->def("get_BFER_monitors", [](const aff3ct::tools::Sequence& self){
 		return self.get_modules<module::Monitor_BFER<>>();
