@@ -18,6 +18,10 @@ PYBIND11_MODULE(py_aff3ct, m){
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_sequence(new aff3ct::wrapper::Wrapper_Sequence(m_sequence));
 	wrappers.push_back(wrapper_sequence.get());
 
+	py::module_ m_pipeline = m0.def_submodule("pipeline");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_pipeline(new aff3ct::wrapper::Wrapper_Pipeline(m_pipeline));
+	wrappers.push_back(wrapper_pipeline.get());
+
 	py::module_ mod_frozenbits_generator = m0.def_submodule("frozenbits_generator");
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_frozenbits_generator(new aff3ct::wrapper::Wrapper_Frozenbits_generator(mod_frozenbits_generator));
 	wrappers.push_back(wrapper_frozenbits_generator.get());

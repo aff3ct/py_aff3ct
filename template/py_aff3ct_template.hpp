@@ -13,6 +13,7 @@
 #include "Wrapper_py/Module/Py_Module/Py_Module.hpp"
 #include "Wrapper_py/Tools/Gaussian_noise_generator_implem/Gaussian_noise_generator_implem.hpp"
 #include "Wrapper_py/Tools/Sequence/Sequence.hpp"
+#include "Wrapper_py/Tools/Pipeline/Pipeline.hpp"
 #include "Wrapper_py/Tools/Monitor_reduction/Monitor_reduction_BFER.hpp"
 #include "Wrapper_py/Tools/Frozenbits_generator/Frozenbits_generator.hpp"
 #include "Wrapper_py/Tools/Frozenbits_generator/Frozenbits_generator_BEC/Frozenbits_generator_BEC.hpp"
