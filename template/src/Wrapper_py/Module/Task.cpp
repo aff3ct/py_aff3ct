@@ -39,6 +39,10 @@ void Wrapper_Task
 	this->def_property("debug", &Task::is_debug, &Task::set_debug);
 	this->def_property("stats", &Task::is_stats, &Task::set_stats);
 	this->def_property("fast" , &Task::is_fast,  &Task::set_fast );
+	this->def("bind", [](aff3ct::module::Task& self, aff3ct::module::Socket& s_out, const int priority)
+	{
+		self.bind(s_out, priority);
+	}, "Binds the Task to socket 's_out' with priority 'priority'.", "s_out"_a, "priority"_a=1);
 
 	this->def("set_debug_hex"      , &Task::set_debug_hex      , "debug_hex"_a);
 	this->def("set_debug_limit"    , &Task::set_debug_limit    , "limit"_a    );

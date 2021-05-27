@@ -74,6 +74,24 @@ PYBIND11_MODULE(py_aff3ct, m){
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_monitor_bfer_reduction(new aff3ct::wrapper::Wrapper_Monitor_reduction_BFER(mod_monitor));
 	wrappers.push_back(wrapper_monitor_bfer_reduction.get());
 
+	py::module_ mod_switcher = m1.def_submodule("switcher");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_switcher(new aff3ct::wrapper::Wrapper_Switcher(mod_switcher));
+	wrappers.push_back(wrapper_switcher.get());
+
+	py::module_ mod_ilv = m1.def_submodule("interleaver");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_int8_t (new aff3ct::wrapper::Wrapper_Interleaver<int8_t,  uint32_t>(mod_ilv, "int8_t"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_int16_t(new aff3ct::wrapper::Wrapper_Interleaver<int16_t, uint32_t>(mod_ilv, "int16_t"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_int32_t(new aff3ct::wrapper::Wrapper_Interleaver<int32_t, uint32_t>(mod_ilv, "int32_t"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_int64_t(new aff3ct::wrapper::Wrapper_Interleaver<int64_t, uint32_t>(mod_ilv, "int64_t"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_float  (new aff3ct::wrapper::Wrapper_Interleaver<float,   uint32_t>(mod_ilv, "float"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_interleaver_double (new aff3ct::wrapper::Wrapper_Interleaver<double,  uint32_t>(mod_ilv, "double"));
+	wrappers.push_back(wrapper_interleaver_int8_t.get());
+	wrappers.push_back(wrapper_interleaver_int16_t.get());
+	wrappers.push_back(wrapper_interleaver_int32_t.get());
+	wrappers.push_back(wrapper_interleaver_int64_t.get());
+	wrappers.push_back(wrapper_interleaver_float.get());
+	wrappers.push_back(wrapper_interleaver_double.get());
+
 {other_module_wrappers}
 
 	for (size_t i = 0; i < wrappers.size(); i++)

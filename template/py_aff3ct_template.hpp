@@ -27,6 +27,9 @@
 #include "Wrapper_py/Module/Monitor/Monitor_BFER/Monitor_BFER.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor_EXIT/Monitor_EXIT.hpp"
 #include "Wrapper_py/Module/Monitor/Monitor_MI/Monitor_MI.hpp"
+#include "Wrapper_py/Module/Switcher/Switcher.hpp"
+#include "Wrapper_py/Module/Interleaver/Interleaver.hpp"
+
 {other_includes}
 
 #endif //PY_AFF3CT_HPP_
