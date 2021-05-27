@@ -7,6 +7,10 @@ an AFF3CT sequence.
 
 The first step is to compile AFF3CT into a library.
 
+Prerequisite:
+
+	$ sudo apt install python3 python3-pip doxygen
+
 Get the AFF3CT library:
 
 	$ git submodule update --init --recursive
@@ -19,7 +23,18 @@ Compile the library on Linux/MacOS/MinGW:
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_COMPILE_SHARED_LIB="ON"
 	$ make -j4
 
+Compile the documentation
+
+	$ cd ../doc
+	$ mkdir build
+	$ cd source
+	$ doxygen Doxyfile
+
 Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
+
+Go back to the project root:
+
+	$ cd ../../../../
 
 ## Compile your code
 
@@ -31,9 +46,7 @@ Copy the `CMake` configuration files from the AFF3CT build
 Compile the code on Linux/MacOS/MinGW:
 
 	$ mkdir build && cd build
-
 	$ ../configure.py --verbose
-
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wall -funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden"
 	$ make -j4
 

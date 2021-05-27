@@ -41,7 +41,7 @@ if args.verbose:
 	print("Excluded tools: ",   args.exclude_tool)
 	print("Wrapped modules: ",  args.include_module)
 	print("Excluded modules: ", args.exclude_module)
-	print("Wrapped defs: ",     args.include_def)
+	# print("Wrapped defs: ",     args.include_def)
 
 if not isdir(args.doxy_xml_path):
 	print("The '" + args.doxy_xml_path + "' path is not a directory, please provide a valid path.")
