@@ -23,14 +23,14 @@ Compile the library on Linux/MacOS/MinGW:
 	$ cmake .. -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-funroll-loops -march=native -fvisibility=hidden -fvisibility-inlines-hidden" -DAFF3CT_COMPILE_EXE="OFF" -DAFF3CT_COMPILE_STATIC_LIB="ON" -DAFF3CT_COMPILE_SHARED_LIB="ON"
 	$ make -j4
 
-Compile the documentation
+Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
+
+Compile the documentation with `Doxygen`:
 
 	$ cd ../doc
 	$ mkdir build
 	$ cd source
 	$ doxygen Doxyfile
-
-Now the AFF3CT library has been built in the `lib/aff3ct/build` folder.
 
 Go back to the project root:
 
