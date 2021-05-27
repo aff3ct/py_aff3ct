@@ -4,6 +4,7 @@ sys.path.insert(0, '../../build/lib')
 import numpy as np
 import py_aff3ct as aff3ct
 import math
+from py_loop_counter import loop_counter
 
 K = 10
 src = aff3ct.module.source.Source_random(K, 12)

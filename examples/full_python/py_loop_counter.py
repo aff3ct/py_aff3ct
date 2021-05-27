@@ -12,10 +12,10 @@ class loop_counter(Py_Module):
     def count(self, ctrl): # Your original code (independently from aff3ct)
         if self.cnt > self.loop_max-2:
             self.cnt = 0
-            ctrl[0,0] = 1
+            ctrl[0,:] = 1
         else:
             self.cnt += 1
-            ctrl[0,0] = 0
+            ctrl[0,:] = 0
         return 0
 
     # Step 3

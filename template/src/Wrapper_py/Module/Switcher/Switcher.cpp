@@ -42,6 +42,12 @@ void Wrapper_Switcher
             else if (dtype_str == "int64"  ) return new aff3ct::module::Switcher(n_data_sockets, n_elmts, typeid(int64_t));
             else if (dtype_str == "float32") return new aff3ct::module::Switcher(n_data_sockets, n_elmts, typeid(float  ));
             else if (dtype_str == "double" ) return new aff3ct::module::Switcher(n_data_sockets, n_elmts, typeid(double ));
+            else
+            {
+                std::stringstream message;
+                message << "Impossible to create an Interleaver of data type '" << dtype_str << "'. Allowed types are 'int8', 'int16', 'int32', 'int64', 'float32', and 'double'.";
+                throw std::runtime_error(message.str());
+            }
         }),"n_data_sockets"_a, "n_elmts"_a, "datatype"_a, py::return_value_policy::reference);
 };
 
