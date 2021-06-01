@@ -102,7 +102,20 @@ void Wrapper_Socket
 	this->def("__deepcopy__", [](const aff3ct::module::Socket &self, py::dict) {return aff3ct::module::Socket(self);}, "memo"_a);
 	this->def("info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s).c_str());}, "Print module information.");
 	this->def("full_info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s, true).c_str());}, "Print module information with additionnal information.");
-
+	this->def_property_readonly("direction", [](const aff3ct::module::Socket& self)
+	{
+		aff3ct::module::Task&   t = self.get_task();
+		if (t.get_socket_type(self) == socket_t::SIN )
+			return("in");
+		else if (t.get_socket_type(self) == socket_t::SOUT )
+			return("out");
+		else // This should not happen
+		{
+			std::stringstream message;
+			message << "Unknown socket direction.";
+			throw std::runtime_error(message.str());
+		}
+	});
 };
 
 std::string Wrapper_Socket
@@ -116,7 +129,7 @@ std::string Wrapper_Socket
 
 	aff3ct::module::Task&   t = s.get_task();
 	aff3ct::module::Module& m = t.get_module();
-	
+
 	std::string type;
 	if (t.get_socket_type(s) == socket_t::SIN )
 		type = "in";
