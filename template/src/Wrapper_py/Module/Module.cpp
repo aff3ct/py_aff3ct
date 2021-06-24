@@ -35,11 +35,28 @@ void Wrapper_Module
 	this->def_property_readonly("tasks", [](Module& self) -> std::vector<std::shared_ptr<Task>> { return self.tasks; });
 	this->def_property("n_frames", &Module::get_n_frames   , &Module::set_n_frames);
 	this->def_property("name"    , &Module::get_custom_name, &Module::set_custom_name);
-	this->def("__getitem__",  [](Module& m, const std::string& s) { return &m[s];}, py::return_value_policy::reference);
-	this->def("__call__",     [](Module& m, const std::string& s) { return &m(s);}, py::return_value_policy::reference);
+	this->def("__getitem__",  [](Module& m, const std::string& s)
+	{
+		size_t pos = s.find("::", 0);
+		if ((int)pos < 0)
+			return py::cast(&m(s));
+		else
+			return py::cast(&m[s]);
+	}, py::return_value_policy::reference);
+	this->def("__call__",     [](Module& m, const std::string& s) {
+		py::print("This method is deprecated, use brackets instead of parenthesis.");
+		return py::cast(&m(s));
+	}, py::return_value_policy::reference);
 	this->def("info", [](Module& m) {py::print(to_string(m).c_str());}, "Print module information.");
 	this->def("full_info", [](Module& m) {py::print(to_string(m, true).c_str());}, "Print module information with additionnal information.");
-
+	this->def("create_reset_task", &Module::create_reset_task);
+	this->def("__setitem__", [](Module& m, const std::string& s, aff3ct::module::Socket& sck){
+		size_t pos = s.find("::", 0);
+		if ((int)pos < 0)
+			m(s) = sck;
+		else
+			m[s] = sck;
+	});
 };
 
 std::string to_string(const aff3ct::module::Module& m, bool full)

@@ -20,10 +20,8 @@ parser.add_argument(      "--verbose", help = "Set the configuration verbose."  
 parser.add_argument(        "--clean", help = "Clean before doing configuration."       , action="store_true")
 parser.add_argument("--doxy-xml-path", help = "Path of the Doxygen XML files."          , default= command_path + "/lib/aff3ct/doc/build/doxygen/xml/")
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
-{
-	'Interleaver' : {'R', ['float', 'double']}
-}
-parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Channel', 'Modem', 'Source', 'Encoder', 'Decoder'])
+
+parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Channel', 'Modem', 'Source', 'Encoder', 'Decoder', 'Sink'])
 parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter', 'Decoder_LDPC_BP_flooding_inter', 'Decoder_LDPC_BP_horizontal_layered_inter', 'Decoder_LDPC_BP_vertical_layered_inter', 'Decoder_LDPC_BP_flooding_SPA', 'Decoder_LDPC_bit_flipping_hard'])
 parser.add_argument( "--include-tool",   nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Sparse_matrix', 'Pattern_polar_i', 'Noise', 'BCH_polynomial_generator', 'RS_polynomial_generator', 'Polar_code','Interleaver_core'])
 parser.add_argument( "--exclude-tool",   nargs="+", help = "List of aff3ct Tools to be excluded from the wrapper. (prioritary over --include-tool). Example : --exclude-tool Constellation", default=[])
@@ -112,6 +110,7 @@ existing_tools = tools.copy()
 existing_tools["aff3ct::tools::Gaussian_noise_generator_implem"] = {}
 existing_tools["aff3ct::tools::Frozenbits_generator"] = {}
 existing_tools["aff3ct::tools::Sequence"] = {}
+existing_tools["aff3ct::tools::Pipeline"] = {}
 
 module_tree = {}
 module_classes_list = aff3ct_tools.recursive_build_classes_list(doxygen, args.include_module, args.exclude_module, "aff3ct::module::", module_tree)
