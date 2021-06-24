@@ -56,7 +56,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			for constructor in class_constructors:
 				arg_types = ""
 				arg_init  = ""
-				new_line  = "\n\tthis->def(py::init<{types}>(){init}, py::return_value_policy::reference);"
+				new_line  = '\n\tthis->def(py::init<{types}>(){init}, R"pbdoc(' + constructor['doc']+ ')pbdoc", py::return_value_policy::reference);'
 				arg_nbr = len(constructor['args'])
 				for a_idx in range(arg_nbr):
 					arg_types += constructor['args'][a_idx]['type'] + ", "
@@ -80,6 +80,16 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 				else:
 					def_lines += '\n\tthis->def("' + def_['short_name'] + '"'
 					def_lines += ', &' + module['short_name'] + module['template']['short'] + '::' + def_['short_name'] + ');'
+
+		if 'tasks_doc' in module.keys():
+			if module["tasks_doc"]:
+				def_lines += '\n\tthis->def_property_readonly("tasks", [](' + module['short_name'] + module['template']['short'] + '& self)-> std::vector<std::shared_ptr<Task>> { return self.tasks; },R"pbdoc(List of tasks:\n\n'+ module["tasks_doc"]+ ')pbdoc");'
+
+		if 'class_doc' in module.keys():
+			if module["class_doc"]:
+				def_lines += '\n\tthis->doc() = R"pbdoc('+ module["class_doc"]+ ')pbdoc";'
+
+
 		if def_lines:
 			def_lines += '\n'
 
@@ -117,6 +127,12 @@ def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 			if not module_info["leaf"] and mod == root_mod:
 				cpp_content += '\tpy::module_ mod_' + module_info['short_name'].lower() + " = " + mod + '.def_submodule("' +  module_info['short_name'].lower() + '");\n'
 				the_mod = 'mod_' + module_info['short_name'].lower()
+				if mod == 'm0':
+					cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Tools inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
+					cpp_content += '\t' + 'doc_m0 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
+				else:
+					cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Modules inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
+					cpp_content += '\t' + 'doc_m1 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
 
 			line = '\tstd::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_'
 			if module_info['has_template']:
@@ -129,6 +145,7 @@ def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 
 			if not module_info["leaf"]:
 				cpp_content = gen_py_aff3ct_cpp(modules, value, the_mod, root_mod, cpp_content)
+
 	return cpp_content
 
 def write_py_aff3ct_cpp(tools, tools_tree, modules, module_tree, command_path, template_path, verbose = False):
@@ -254,10 +271,12 @@ def extract_type(val):
 	has_template = False
 	container = ""
 	has_container = False
-
+	initial_val = val
 	if isinstance(val, dict):
 		if "#text" in val.keys():
+
 			val_text = val["#text"]
+			initial_val = val_text
 			if val["#text"].startswith("const"):
 				is_const = True
 				val_text = val_text[5:]
@@ -291,7 +310,8 @@ def extract_type(val):
 				type_val += container + "<"
 				new_val = {"#text": val_text,
 							"ref" : val["ref"]}
-				type_val += extract_type(new_val) + ">"
+				# type_val += extract_type(new_val) + ">"
+				type_val += new_val + ">"
 			else:
 				type_val += val["ref"]["#text"]
 
@@ -305,7 +325,7 @@ def extract_type(val):
 				type_val += "&"
 	else:
 		type_val = val
-
+	print("Initial : ", initial_val, " | new val : ", type_val)
 	return type_val
 
 def gen_template(entry):
@@ -325,7 +345,8 @@ def gen_template(entry):
 			if not "defval" in tp.keys():
 				message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + get_short_name(entry) + " has a template without default value." + bcolors.ENDC
 				raise RuntimeError(message)
-			t = extract_type(tp["defval"]);
+			#t = extract_type(tp["defval"])
+			t = tp["defval"]
 			default += t + ","
 		default = default[:-1] + ">"
 
@@ -349,9 +370,11 @@ def gen_template(entry):
 		full = "template <"
 		for tp in templates_list:
 			if "defname" in tp.keys():
-				full += tp["type"] + " " + tp["defname"] + " = " + extract_type(tp["defval"]) + ","
+				#full += tp["type"] + " " + tp["defname"] + " = " + extract_type(tp["defval"]) + ","
+				full += tp["type"] + " " + tp["defname"] + " = " + tp["defval"] + ","
 			else:
-				full += tp["type"] + " = " + extract_type(tp["defval"]) + ","
+				#full += tp["type"] + " = " + extract_type(tp["defval"]) + ","
+				full += tp["type"] + " = " + tp["defval"] + ","
 		full = full[:-1] + ">"
 
 	return {"full":    full,
@@ -429,7 +452,8 @@ def gen_constructors(entry, existing_tools):
 
 						type_val = ""
 						if "type" in a.keys():
-							type_val = extract_type(a["type"])
+							#type_val = extract_type(a["type"])
+							type_val = a["type"]
 							# trick to skip unsupported constructors
 							if "tools::" in type_val:
 								tools_available = False
@@ -452,12 +476,26 @@ def gen_constructors(entry, existing_tools):
 							"type": type_val,
 							"default": default_val
 						})
-
+						doc_str = extract_contructor_doc(mb)
 					if not tools_available:
 						continue
 
-					constructors.append({"args": args})
+					constructors.append({"args": args, "doc": doc_str})
 	return constructors
+
+def extract_contructor_doc(mb):
+	doc_str = ''
+	if "detaileddescription" in mb.keys():
+		if mb["detaileddescription"]:
+			desc = mb['detaileddescription']['para']['parameterlist']['parameteritem']
+			if type(desc) is not list:
+				desc = [desc]
+			bullet = ""
+			if len(desc) > 1:
+				bullet = "* "
+			for item in desc:
+				doc_str += bullet + item['parameternamelist']['parametername'] + ': ' + item['parameterdescription']['para'] + '\n'
+	return doc_str
 
 def is_leaf(entry):
 	return "derivedcompoundref" not in entry["compounddef"]
@@ -492,6 +530,72 @@ def gen_definitions(entry, dictio):
 							print (message)
 	return defs
 
+def gen_tasks_doc(entry):
+	tasks_doc = ""
+	is_module = False
+	if "basecompoundref" in entry["compounddef"]:
+		refs_list = entry["compounddef"]["basecompoundref"]
+		if type(refs_list) is not list:
+			refs_list = [refs_list]
+		for ref in refs_list:
+			if 'aff3ct::module::' in ref["#text"]:
+				is_module = True
+				break
+	if is_module:
+		sd_list = entry["compounddef"]["sectiondef"]
+		if type(sd_list) is not list:
+			sd_list = [sd_list]
+		for sd in sd_list:
+			if sd["@kind"] == "public-func":
+				mb_list = sd["memberdef"]
+				if type(mb_list) is not list:
+					mb_list = [mb_list]
+				for mb in mb_list:
+					if "briefdescription" in mb:
+						if mb["briefdescription"]:
+							brief = mb["briefdescription"]["para"]
+							if 'Task method' in brief:
+								if tasks_doc:
+									tasks_doc += '\n\n'
+								tasks_doc += "* **" + mb['name'] + "**: " +brief
+								if mb["detaileddescription"]:
+									para = mb["detaileddescription"]["para"]
+									if type(para) is not list:
+										para = [para]
+									for p in para:
+										if type(p) is str:
+											tasks_doc += ' ' + p + '\n\n'
+										else:
+											if tasks_doc[-1] != '\n':
+												tasks_doc += '\n\n'
+											desc = p["parameterlist"]["parameteritem"]
+											if type(desc) is not list:
+												desc = [desc]
+											for item in desc:
+												tasks_doc += "  * " + item['parameternamelist']['parametername'] + ': ' + item['parameterdescription']['para'] + '\n'
+	return tasks_doc
+def gen_class_doc(entry):
+	class_doc = ""
+	if "briefdescription" in entry["compounddef"]:
+		if entry["compounddef"]["briefdescription"]:
+			class_doc = entry["compounddef"]["briefdescription"]['para']
+			if entry["compounddef"]["detaileddescription"]:
+				para = entry["compounddef"]["detaileddescription"]["para"]
+				if type(para) is not list:
+					para = [para]
+				for p in para:
+					if type(p) is str:
+						class_doc += p + '\n'
+					else:
+						desc = p["parameterlist"]["parameteritem"]
+						if type(desc) is not list:
+							desc = [desc]
+
+						class_doc += '\n\nParameters:\n\n'
+						for item in desc:
+							class_doc += "  * " + item['parameternamelist']['parametername'] + ': ' + item['parameterdescription']['para'] + '\n'
+	return class_doc
+
 def build_modules(data, install_path, path, classes_list, existing_tools = {}):
 	dictio = {}
 	for class_name in classes_list:
@@ -506,5 +610,8 @@ def build_modules(data, install_path, path, classes_list, existing_tools = {}):
 		                      "definitions":  gen_definitions (data[class_name], data),
 		                      "include_path": get_include_path(data[class_name], path),
 		                      "constructors": gen_constructors(data[class_name], existing_tools),
-		                      "mk_dir_path":  get_include_path(data[class_name], install_path + "/" + path)}
+		                      "mk_dir_path":  get_include_path(data[class_name], install_path + "/" + path),
+		                      "tasks_doc":    gen_tasks_doc   (data[class_name]),
+							  "class_doc":    gen_class_doc   (data[class_name])
+							  }
 	return dictio

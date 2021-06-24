@@ -1,5 +1,8 @@
 cmake/
 
+# mac OSX DS_Store
+.DS_Store
+
 # automatically generated
 /src
 
@@ -76,7 +79,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/build/
 
 # PyBuilder
 target/

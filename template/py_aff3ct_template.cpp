@@ -6,13 +6,38 @@ PYBIND11_MODULE(py_aff3ct, m){
 	// Split in two following https://pybind11.readthedocs.io/en/stable/advanced/misc.html#avoiding-c-types-in-docstrings
 	// for enhancing python doc
 	setControlMode(rang::control::Off);
-	m.def("enable_colors", [](){setControlMode(rang::control::Force);});
-	m.def("disable_colors",[](){setControlMode(rang::control::Off);});
+
+	m.doc() =
+R"pbdoc(
+        py_aff3ct python bindings for AFF3CT library.
+
+        .. autosummary::
+           :toctree:
+           :template: custom-module-template.rst
+
+           tools
+           module
+)pbdoc";
 
 	std::vector<wrapper::Wrapper_py*> wrappers;
 	py::module_ m0 = m.def_submodule("tools");
 	std::unique_ptr<wrapper::Wrapper_py> wrapper_gngi       (new wrapper::Wrapper_Gaussian_noise_generator_implem(m0));
 	wrappers.push_back(wrapper_gngi.get());
+
+	//m.def("enable_colors", [](){setControlMode(rang::control::Force);});
+	//m.def("disable_colors",[](){setControlMode(rang::control::Off);});
+	std::string doc_m0 =
+R"pbdoc(
+        Bindings for AFF3CT tools.
+
+        .. autosummary::
+           :toctree:
+           :template: custom-module-template.rst
+
+           sequence
+           pipeline
+           frozenbits_generator
+)pbdoc";
 
 	py::module_ m_sequence = m0.def_submodule("sequence");
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_sequence(new aff3ct::wrapper::Wrapper_Sequence(m_sequence));
@@ -43,10 +68,25 @@ PYBIND11_MODULE(py_aff3ct, m){
 
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_frozenbits_generator_tv(new aff3ct::wrapper::Wrapper_Frozenbits_generator_TV(mod_frozenbits_generator));
 	wrappers.push_back(wrapper_frozenbits_generator_tv.get());
+
 {other_tool_wrappers}
 
-	py::module_ m1 = m.def_submodule("module");
+	m0.doc() = doc_m0.c_str();
 
+	py::module_ m1 = m.def_submodule("module");
+	std::string doc_m1 =
+R"pbdoc(
+        Bindings for AFF3CT modules.
+
+        .. autosummary::
+           :toctree:
+           :template: custom-module-template.rst
+
+           py_module
+           monitor
+           switcher
+           interleaver
+)pbdoc";
 	std::unique_ptr<wrapper::Wrapper_py> wrapper_socket       (new wrapper::Wrapper_Socket         (m1));
 	wrappers.push_back(wrapper_socket.get());
 
@@ -93,7 +133,7 @@ PYBIND11_MODULE(py_aff3ct, m){
 	wrappers.push_back(wrapper_interleaver_double.get());
 
 {other_module_wrappers}
-
+	m1.doc() = doc_m1.c_str();
 	for (size_t i = 0; i < wrappers.size(); i++)
 		wrappers[i]->definitions();
 }

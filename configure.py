@@ -20,8 +20,10 @@ parser.add_argument(      "--verbose", help = "Set the configuration verbose."  
 parser.add_argument(        "--clean", help = "Clean before doing configuration."       , action="store_true")
 parser.add_argument("--doxy-xml-path", help = "Path of the Doxygen XML files."          , default= command_path + "/lib/aff3ct/doc/build/doxygen/xml/")
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
-
-parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Source', 'Modem', 'Channel', 'Encoder', 'Decoder'])
+{
+	'Interleaver' : {'R', ['float', 'double']}
+}
+parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Channel', 'Modem', 'Source', 'Encoder', 'Decoder'])
 parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter', 'Decoder_LDPC_BP_flooding_inter', 'Decoder_LDPC_BP_horizontal_layered_inter', 'Decoder_LDPC_BP_vertical_layered_inter', 'Decoder_LDPC_BP_flooding_SPA', 'Decoder_LDPC_bit_flipping_hard'])
 parser.add_argument( "--include-tool",   nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Sparse_matrix', 'Pattern_polar_i', 'Noise', 'BCH_polynomial_generator', 'RS_polynomial_generator', 'Polar_code','Interleaver_core'])
 parser.add_argument( "--exclude-tool",   nargs="+", help = "List of aff3ct Tools to be excluded from the wrapper. (prioritary over --include-tool). Example : --exclude-tool Constellation", default=[])
@@ -60,6 +62,13 @@ for f in doxyFiles:
 		pattern = re.compile("^aff3ct::module::|^aff3ct::tools::")
 		if pattern.match(realName):
 			data = open(join(args.doxy_xml_path, f), 'r').read()
+			start_ref = data.find('<ref')
+			while start_ref > -1:
+				end_ref = data.find('>', start_ref)
+				data = data[:start_ref] + data[end_ref+1:]
+				start_ref = data.find('<ref')
+
+			data = data.replace("</ref>", "")
 			dict = xmltodict.parse(data)
 			doxygen[realName] = dict["doxygen"]
 			error = True
@@ -89,6 +98,8 @@ for key, value in doxygen.items():
 					else:
 						value["compounddef"]["derivedcompoundref"].append(elmt)
 
+#with open('doxygen.json', 'w') as fid:
+#	json.dump(doxygen, fid)
 tools_tree = {}
 tools_classes_list = aff3ct_tools.recursive_build_classes_list(doxygen, args.include_tool, args.exclude_tool, "aff3ct::tools::", tools_tree)
 tools = aff3ct_tools.build_modules(doxygen, command_path + "/src", "Wrapper_py", tools_classes_list)
