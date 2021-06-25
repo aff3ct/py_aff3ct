@@ -44,7 +44,7 @@ void Wrapper_Module
 			return py::cast(&m[s]);
 	}, py::return_value_policy::reference);
 	this->def("__call__",     [](Module& m, const std::string& s) {
-		py::print("This method is deprecated, use brackets instead of parenthesis.");
+		py::print("The use of parenthesis for accessing tasks is deprecated, use brackets instead.");
 		return py::cast(&m(s));
 	}, py::return_value_policy::reference);
 	this->def("info", [](Module& m) {py::print(to_string(m).c_str());}, "Print module information.");
