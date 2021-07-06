@@ -55,7 +55,7 @@ void Wrapper_Socket
 		);
 	}
 	});
-
+	this->def("get_task", &aff3ct::module::Socket::get_task, py::return_value_policy::reference);
 	this->def("__getitem__", [](aff3ct::module::Socket& sckt, py::handle& index) {
 		py::array array = py::cast(sckt);
 		return array.attr("__getitem__")(index);
@@ -99,7 +99,6 @@ void Wrapper_Socket
 		self.bind(buffer.ptr);
 	}, "Binds the socket to the numpy array 'array' with priority 'priority'.", "array"_a);
 	this->def_property_readonly("name", &aff3ct::module::Socket::get_name);
-	this->def("__deepcopy__", [](const aff3ct::module::Socket &self, py::dict) {return aff3ct::module::Socket(self);}, "memo"_a);
 	this->def("info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s).c_str());}, "Print module information.");
 	this->def("full_info", [](const aff3ct::module::Socket& s) {py::print(Wrapper_Socket::to_string(s, true).c_str());}, "Print module information with additionnal information.");
 	this->def_property_readonly("direction", [](const aff3ct::module::Socket& self)

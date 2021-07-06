@@ -56,7 +56,7 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			for constructor in class_constructors:
 				arg_types = ""
 				arg_init  = ""
-				new_line  = '\n\tthis->def(py::init<{types}>(){init}, R"pbdoc(' + constructor['doc']+ ')pbdoc", py::return_value_policy::reference);'
+				new_line  = '\n\tthis->def(py::init<{types}>(){init}, R"pbdoc(' + constructor['doc']+ ')pbdoc", py::return_value_policy::take_ownership);'
 				arg_nbr = len(constructor['args'])
 				for a_idx in range(arg_nbr):
 					arg_types += constructor['args'][a_idx]['type'] + ", "

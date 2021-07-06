@@ -48,6 +48,6 @@ void Wrapper_Switcher
                 message << "Impossible to create an Interleaver of data type '" << dtype_str << "'. Allowed types are 'int8', 'int16', 'int32', 'int64', 'float32', and 'double'.";
                 throw std::runtime_error(message.str());
             }
-        }),"n_data_sockets"_a, "n_elmts"_a, "datatype"_a, py::return_value_policy::reference);
+        }),"n_data_sockets"_a, "n_elmts"_a, "datatype"_a, py::return_value_policy::take_ownership);
 };
 

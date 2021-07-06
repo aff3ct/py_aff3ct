@@ -39,7 +39,7 @@ void Wrapper_Pipeline
 	                   "synchro_active_waiting"_a = std::vector<bool>(),
 	                   "thread_pinning"_a         = std::vector<bool>(),
 	                   "puids"_a                  = std::vector<std::vector<size_t>>(),
-					   py::return_value_policy::reference
+					   py::return_value_policy::take_ownership
 			);
 
 	this->def("exec", [](aff3ct::tools::Pipeline& self)

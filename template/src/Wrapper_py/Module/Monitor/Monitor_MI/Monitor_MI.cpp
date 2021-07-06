@@ -19,7 +19,8 @@ template <typename B, typename R>
 void Wrapper_Monitor_MI<B, R>
 ::definitions()
 {
-	this->def(py::init<const int, const unsigned int>(),"N"_a, "max_n_trials"_a, py::return_value_policy::reference);
+	this->def(py::init<const int, const unsigned int>(),"N"_a, "max_n_trials"_a, py::return_value_policy::take_ownership);
+    this->def("get_MI", &aff3ct::module::Monitor_MI<B,R>::get_MI);
 };
 
 #include "Tools/types.h"

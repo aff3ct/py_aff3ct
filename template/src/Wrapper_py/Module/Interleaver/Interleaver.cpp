@@ -19,7 +19,7 @@ template <typename D,typename T>
 void Wrapper_Interleaver<D,T>
 ::definitions()
 {
-	this->def(py::init<const tools::Interleaver_core<T>&>(),"core"_a, py::return_value_policy::reference);
+	this->def(py::init<const tools::Interleaver_core<T>&>(),"core"_a, py::return_value_policy::take_ownership);
 };
 
 #include "Tools/types.h"

@@ -19,7 +19,9 @@ template <typename B, typename R>
 void Wrapper_Monitor_EXIT<B, R>
 ::definitions()
 {
-	this->def(py::init<const int, const unsigned int>(),"size"_a, "max_n_trials"_a, py::return_value_policy::reference);
+	this->def(py::init<const int, const unsigned int>(),"size"_a, "max_n_trials"_a, py::return_value_policy::take_ownership);
+    this->def("get_I_A", &Monitor_EXIT<B,R>::get_I_A);
+    this->def("get_I_E", &Monitor_EXIT<B,R>::get_I_E);
 };
 
 #include "Tools/types.h"

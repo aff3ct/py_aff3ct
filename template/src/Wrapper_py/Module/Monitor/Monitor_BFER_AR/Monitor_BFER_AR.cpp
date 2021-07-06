@@ -19,7 +19,7 @@ template <typename B>
 void Wrapper_Monitor_BFER_AR<B>
 ::definitions()
 {
-	this->def(py::init<const int, const unsigned int, const unsigned int, const bool>(),"K"_a, "max_fe"_a, "max_n_frames"_a = 0, "count_unknown_values"_a = false, py::return_value_policy::reference);
+	this->def(py::init<const int, const unsigned int, const unsigned int, const bool>(),"K"_a, "max_fe"_a, "max_n_frames"_a = 0, "count_unknown_values"_a = false, py::return_value_policy::take_ownership);
 
 	this->def("get_n_analyzed_fra", &aff3ct::module::Monitor_BFER_AR<B>::get_n_analyzed_fra);
 	this->def("get_n_fe"          , &aff3ct::module::Monitor_BFER_AR<B>::get_n_fe          );

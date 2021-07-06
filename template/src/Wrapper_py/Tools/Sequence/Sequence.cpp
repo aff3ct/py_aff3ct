@@ -23,10 +23,10 @@ Wrapper_Sequence
 void Wrapper_Sequence
 ::definitions()
 {
-	this->def(py::init<module::Task &, module::Task &, const size_t, const bool, const std::vector<size_t> &>(), "first"_a, "last"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::reference);
-	this->def(py::init<const module::Task &, const size_t, const bool, const std::vector<size_t> &>(), "first"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::reference);
-	this->def(py::init<const std::vector<const module::Task *> &, const size_t, const bool, const std::vector<size_t> &>(), "firsts"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::reference);
-	this->def(py::init<const std::vector<const module::Task *> &, const std::vector<const module::Task *> &, const size_t, const bool, const std::vector<size_t> &>(), "firsts"_a, "lasts"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::reference);
+	this->def(py::init<module::Task &, module::Task &, const size_t, const bool, const std::vector<size_t> &>(), "first"_a, "last"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::take_ownership);
+	this->def(py::init<module::Task &, const size_t, const bool, const std::vector<size_t> &>(), "first"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), py::return_value_policy::take_ownership);
+	this->def(py::init<const std::vector<module::Task *> &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "firsts"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true,py::return_value_policy::take_ownership);
+	this->def(py::init<const std::vector<module::Task *> &, const std::vector<module::Task *> &, const std::vector<module::Task *> &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "firsts"_a, "lasts"_a, "exclusions"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true,py::return_value_policy::take_ownership);
 	/*this->def(py::init<const std::vector<const module::Task *> &, const std::vector<const module::Task *> &, const std::vector<const module::Task *> &, const size_t, const bool, const std::vector<size_t> &>(), "firsts"_a, "lasts"_a, "exclusions"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>());
 	this->def(py::init<const std::vector<module::Task *> &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "firsts"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true);
 	this->def(py::init<const std::vector<module::Task *> &, const std::vector<module::Task *> &, const size_t, const bool, const std::vector<size_t> &, const bool>(), "firsts"_a, "lasts"_a, "n_threads"_a = 1, "thread_pinning"_a = false, "puids"_a = std::vector<size_t>(), "tasks_inplace"_a = true);
@@ -40,15 +40,7 @@ void Wrapper_Sequence
 		self.exec(); // gil aquired before exec of stop_condition
 		             // see that pybind11/functionnal.h l.62
 	});
-	/*
-	this->def("exec_auto", [](aff3ct::tools::Sequence& self)
-	{
-		py::gil_scoped_release release;
-		auto mnt_red = tools::Monitor_reduction<module::Monitor_BFER<>>(self.get_modules<module::Monitor_BFER<>>());
-		mnt_red.set_reduce_frequency(std::chrono::nanoseconds(1000000));
-		self.exec([&mnt_red]() { return mnt_red.is_done();}); // gil aquired before exec of stop_condition
-		                              // see that pybind11/functionnal.h l.62
-	});*/
+	this->def("exec_step", &aff3ct::tools::Sequence::exec_step, "tid"_a = 0, "frame_id"_a = -1, py::return_value_policy::reference);
 
 
 	this->def("export_dot", [](aff3ct::tools::Sequence& self, const std::string& file_name){
@@ -66,9 +58,10 @@ void Wrapper_Sequence
 	});
 
 	this->def("get_tasks_per_types", &aff3ct::tools::Sequence::get_tasks_per_types, py::return_value_policy::reference);
-
+	this->def("exec_step", &aff3ct::tools::Sequence::exec_step, py::return_value_policy::reference);
 	this->def("get_BFER_monitors", [](const aff3ct::tools::Sequence& self){
 		return self.get_modules<module::Monitor_BFER<>>();
 	}, py::return_value_policy::reference);
+	this->def("is_done", &aff3ct::tools::Sequence::is_done);
 };
 

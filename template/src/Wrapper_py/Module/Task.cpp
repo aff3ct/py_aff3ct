@@ -50,9 +50,7 @@ void Wrapper_Task
 	this->def("set_debug_frame_max", &Task::set_debug_frame_max, "limit"_a    );
 	this->def("info"     , [](const aff3ct::module::Task& t) {py::print(Wrapper_Task::to_string(t).c_str());}, "Print module information.");
 	this->def("full_info", [](const aff3ct::module::Task& t) {py::print(Wrapper_Task::to_string(t, true).c_str());}, "Print module information with additionnal information.");
-
-
-	this->def_property_readonly("tasks", [](aff3ct::module::Task_Publicist& self) { return self.codelet; });
+	this->def("get_module", &aff3ct::module::Task::get_module, py::return_value_policy::reference);
 };
 
 std::string Wrapper_Task
