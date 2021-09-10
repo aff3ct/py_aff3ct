@@ -15,7 +15,7 @@ namespace py = pybind11;
 
 Py_Module
 ::Py_Module()
-: Module()
+: Module(), done_flag(false)
 {
 	const std::string name = "Py_Module";
 	this->set_name(name);
@@ -26,7 +26,7 @@ Py_Module
 
 Py_Module
 ::Py_Module(const Py_Module& ref)
-: Module(ref)
+: Module(ref), done_flag(false)
 {
 	this->set_name(ref.get_name());
 	this->set_short_name(ref.get_name());
@@ -46,9 +46,19 @@ void Py_Module
 		py::list l;
 		for (size_t i = 0; i < t.sockets.size()-1; i++) // I don't pass the STATUS here
 			l.append(py::array(py::cast(t.sockets[i])));
-		int status = codelet(py_m,l,f).cast<int>();
-		return status; // status filled automatically after that
+
+		return codelet(py_m,l,f).cast<int>();
 	});
+}
+
+void Py_Module
+::create_fake_codelet(Task& task)
+{
+	Module::create_codelet(task,[](Module &m, Task &t, const size_t f)->int
+	{
+		return 0;
+	});
+
 }
 
 void Py_Module
@@ -106,9 +116,11 @@ py::object Py_Module
 	// clone C++ state using copy constructor of Py_Module (copy Tasks, Sockets ...)
 	py::module::import("py_aff3ct").attr("module").attr("py_module").attr("Py_Module").attr("__init__")(copy_, py_module);
 	// clone Python state
+	py::object py_deepcopy  = py::module::import("copy").attr("deepcopy");
 	try
 	{
-		copy_.attr("__dict__").attr("update")(py_module.attr("__dict__"));
+		py::object cpy_dict = py_deepcopy(py_module.attr("__dict__"));
+		copy_.attr("__dict__").attr("update")(cpy_dict);
 	}
 	catch(const std::exception& e)
 	{
@@ -187,7 +199,7 @@ std::string Py_Module
 			message << "\t\t\t\t- Data type         : " << this->tasks[i]->sockets[j]->get_datatype_string() << "\n";
 			message << "\t\t\t\t- Data bytes        : " << this->tasks[i]->sockets[j]->get_databytes() << "\n";
 			message << "\t\t\t\t- Data ptr          : " << this->tasks[i]->sockets[j]->get_dataptr() << "\n";
-			message << "\t\t\t\t- Adress            : " << std::hex << static_cast<void*>(this->tasks[i]->sockets[j].get()) << "\n\n";
+			message << "\t\t\t\t- Address           : " << std::hex << static_cast<void*>(this->tasks[i]->sockets[j].get()) << "\n\n";
 		}
 	}
 	if (this->has_child())
@@ -203,4 +215,16 @@ std::string Py_Module
 
 
 	return message.str();
+}
+
+bool Py_Module
+::is_done() const
+{
+	return this->done_flag;
+}
+
+void Py_Module
+::toggle_done()
+{
+	this->done_flag = true;
 }

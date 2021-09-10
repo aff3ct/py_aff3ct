@@ -23,11 +23,13 @@ void Wrapper_Py_Module
 	this->def(py::init<>());
 	this->def(py::init<const Py_Module_Trampoline&>());
 	this->def("clone",          &Py_Module::clone);
+	this->def("toggle_done",    &Py_Module::toggle_done);
 	this->def("__copy__",       &Py_Module::__copy__);
 	this->def("__deepcopy__",   &Py_Module::__deepcopy__);
 	this->def("__str__",        &Py_Module::to_string);
 	this->def_property("n_frames", &Py_Module::get_n_frames, &Py_Module::set_n_frames);
 	this->def("create_codelet", &Py_Module::create_codelet, "task"_a, "codelet"_a);
+	this->def("create_fake_codelet", &Py_Module::create_fake_codelet, "task"_a);
 
 	this->def("create_task", [](Py_Module& self, const std::string &name)->Task&
 	{

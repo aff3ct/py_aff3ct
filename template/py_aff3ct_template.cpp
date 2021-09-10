@@ -69,6 +69,10 @@ R"pbdoc(
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_frozenbits_generator_tv(new aff3ct::wrapper::Wrapper_Frozenbits_generator_TV(mod_frozenbits_generator));
 	wrappers.push_back(wrapper_frozenbits_generator_tv.get());
 
+	py::module_ mod_sparse_matrix = m0.def_submodule("sparse_matrix");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_sparse_matrix(new aff3ct::wrapper::Wrapper_Sparse_matrix(mod_sparse_matrix));
+	wrappers.push_back(wrapper_sparse_matrix.get());
+
 {other_tool_wrappers}
 
 	m0.doc() = doc_m0.c_str();

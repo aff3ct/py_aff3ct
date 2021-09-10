@@ -11,10 +11,13 @@ namespace aff3ct
 {
 namespace module
 {
-class Py_Module : public Module
+class Py_Module : public Module, public aff3ct::tools::Interface_is_done
 {
 private:
 	std::shared_ptr<py::object> child;
+
+protected:
+	bool done_flag;
 
 public:
 	Py_Module();
@@ -33,10 +36,12 @@ public:
 	virtual void set_n_frames         (const size_t n_frames         );
 
 	void create_codelet(Task& task, const py::function& codelet);
+	void create_fake_codelet(Task& task);
 	std::string to_string() const;
 	bool has_child() const;
 	py::object get_child() const;
-
+	bool is_done() const;
+	void toggle_done();
 };
 }
 }

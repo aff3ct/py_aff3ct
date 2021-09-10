@@ -1,6 +1,8 @@
 #include <pybind11/stl.h>
 #include <pybind11/iostream.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
+
 #include <functional>
 #include <iostream>
 #include <sstream>
@@ -57,6 +59,23 @@ void Wrapper_Module
 		else
 			m[s] = sck;
 	});
+	this->def("__setitem__", [](Module& m, const std::string& s, py::array& arr){
+		size_t pos = s.find("::", 0);
+
+		if ((int)pos >= 0)
+		{
+			py::object py_sck = py::cast(&(m[s]));
+			py_sck.attr("bind")(arr);
+		}
+		else
+		{
+			std::stringstream message;
+			message << "Cannot bind an array to a task.";
+			throw std::runtime_error(message.str());
+		}
+
+	});
+
 };
 
 std::string to_string(const aff3ct::module::Module& m, bool full)

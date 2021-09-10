@@ -52,15 +52,15 @@ void Wrapper_Sequence
 	{
 		py::scoped_ostream_redirect stream(
 			std::cout,                               // std::ostream&
-			py::module_::import("sys").attr("stdout") // Python output
+			py::module_::import("sys").attr("stdout")// Python output
 		);
 		tools::Stats::show(self.get_modules_per_types(), true);
 	});
 
 	this->def("get_tasks_per_types", &aff3ct::tools::Sequence::get_tasks_per_types, py::return_value_policy::reference);
-	this->def("exec_step", &aff3ct::tools::Sequence::exec_step, py::return_value_policy::reference);
-	this->def("get_BFER_monitors", [](const aff3ct::tools::Sequence& self){
-		return self.get_modules<module::Monitor_BFER<>>();
+
+	this->def("get_modules_set_seed", [](const aff3ct::tools::Sequence& self){
+		return self.get_modules<tools::Interface_set_seed>();
 	}, py::return_value_policy::reference);
 	this->def("is_done", &aff3ct::tools::Sequence::is_done);
 };

@@ -4,6 +4,7 @@ import os
 import re
 import filecmp
 from subprocess import call
+import copy
 
 class bcolors:
     HEADER    = '\033[95m'
@@ -26,6 +27,13 @@ def make_dir_tree(modules, verbose = False):
 
 def write_hpp_wrappers(modules, template_path, verbose = False):
 	for _,module in modules.items():
+		if (("Decoder_LDPC_BP_horizontal_layered" in module['short_name']
+		or   "Decoder_LDPC_BP_vertical_layered"   in module['short_name']
+		or   "Decoder_LDPC_BP_flooding"           in module['short_name'])
+		and ("ONMS" not in module['short_name'] and "Gallager" not in module['short_name'])):
+			write_LDPC_BP_HL_hpp_wrapper(template_path, module['mk_dir_path'], module['short_name'], verbose)
+			continue
+
 		wrapper_hpp = ""
 		with open(template_path + "/Wrapper_template.hpp","r") as f:
 			wrapper_hpp = f.read()
@@ -46,8 +54,75 @@ def write_hpp_wrappers(modules, template_path, verbose = False):
 		file_path = module['mk_dir_path'] + "/" + module['short_name'] + ".hpp"
 		write_if_different(file_path, wrapper_hpp, verbose)
 
+def write_LDPC_BP_HL_hpp_wrapper(template_path, mk_dir_path, short_name, verbose):
+	types              = [ "MS", "OMS",       "NMS",            "SPA",           "LSPA"]
+
+	for i in range(len(types)):
+		wrapper_hpp = ""
+		with open(template_path + "/special/Wrapper_Decoder_LDPC_BP_horizontal_layered_template.hpp","r") as f:
+			wrapper_hpp = f.read()
+			if "inter" in short_name:
+				wrapper_hpp = wrapper_hpp.replace("{simd}", "_simd")
+			else:
+				wrapper_hpp = wrapper_hpp.replace("{simd}", "")
+
+			wrapper_hpp = wrapper_hpp.replace("{type}", types[i])
+			wrapper_hpp = wrapper_hpp.replace("{TYPE}", types[i].upper())
+			wrapper_hpp = wrapper_hpp.replace("{short_name}", short_name)
+			wrapper_hpp = wrapper_hpp.replace("{SHORT_NAME}", short_name.upper())
+			file_path = mk_dir_path + "/" + short_name + "_" + types[i] + ".hpp"
+			write_if_different(file_path, wrapper_hpp, verbose)
+
+def write_LDPC_BP_HL_cpp_wrapper(template_path, mk_dir_path, include_path, short_name, verbose):
+	types              = [ "MS", "OMS",       "NMS",            "SPA",           "LSPA"]
+	update_rule_args   = [ "",   "(R)offset", "(R)norm_factor", "max_CN_degree", "max_CN_degree"]
+	max_CN_degree_decl = "const auto max_CN_degree = (unsigned int)H.get_cols_max_degree();\n"
+	offset_decl        = "const float offset, "
+	norm_factor_decl   = "const float norm_factor, "
+
+	for i in range(len(types)):
+		wrapper_cpp = ""
+		with open(template_path + "/special/Wrapper_Decoder_LDPC_BP_horizontal_layered_template.cpp","r") as f:
+			wrapper_cpp = f.read()
+			wrapper_cpp = wrapper_cpp.replace("{short_name}", short_name)
+			wrapper_cpp = wrapper_cpp.replace("{path}", include_path)
+			wrapper_cpp = wrapper_cpp.replace("{type}", types           [i])
+			wrapper_cpp = wrapper_cpp.replace("{args}", update_rule_args[i])
+			if "inter" in short_name:
+				wrapper_cpp = wrapper_cpp.replace("{simd}", "_simd")
+			else:
+				wrapper_cpp = wrapper_cpp.replace("{simd}", "")
+
+			if update_rule_args[i] == "(R)offset":
+				wrapper_cpp = wrapper_cpp.replace("{offset_decl}", offset_decl)
+				wrapper_cpp = wrapper_cpp.replace("{offset_arg}", '"offset"_a=(R)0.0f, ')
+			else:
+				wrapper_cpp = wrapper_cpp.replace("{offset_decl}", "")
+				wrapper_cpp = wrapper_cpp.replace("{offset_arg}", '')
+
+			if update_rule_args[i] == "(R)norm_factor":
+				wrapper_cpp = wrapper_cpp.replace("{norm_factor_decl}", norm_factor_decl)
+				wrapper_cpp = wrapper_cpp.replace("{norm_factor_arg}", '"norm_factor"_a=(R)1.0f, ')
+			else:
+				wrapper_cpp = wrapper_cpp.replace("{norm_factor_decl}", "")
+				wrapper_cpp = wrapper_cpp.replace("{norm_factor_arg}", '')
+
+			if update_rule_args[i] == "max_CN_degree":
+				wrapper_cpp = wrapper_cpp.replace("{max_CN_degree_decl}", max_CN_degree_decl)
+			else:
+				wrapper_cpp = wrapper_cpp.replace("{max_CN_degree_decl}", "")
+
+			file_path = mk_dir_path + "/" + short_name + "_" + types[i] + ".cpp"
+			write_if_different(file_path, wrapper_cpp, verbose)
+
 def write_cpp_wrappers(modules, template_path, verbose = False):
 	for _,module in modules.items():
+		if (("Decoder_LDPC_BP_horizontal_layered" in module['short_name']
+		or   "Decoder_LDPC_BP_vertical_layered"   in module['short_name']
+		or   "Decoder_LDPC_BP_flooding"           in module['short_name'])
+		and ("ONMS" not in module['short_name'] and "Gallager" not in module['short_name'])):
+			write_LDPC_BP_HL_cpp_wrapper(template_path, module['mk_dir_path'], module['include_path'], module['short_name'], verbose)
+			continue
 		init_lines = ""
 		wrapper_cpp = ""
 
@@ -73,6 +148,8 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			init_lines += '\n'
 
 		def_lines = ""
+		if module['short_name'] == 'Encoder':
+			def_lines += '\n\tthis->def("get_info_bits_pos", &Encoder<B>::get_info_bits_pos);\n'
 		if 'definitions' in module.keys():
 			for def_ in module['definitions']:
 				if module['short_name'] == 'Decoder' and def_['short_name'] == 'reset':
@@ -119,29 +196,49 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 		file_path = module['mk_dir_path'] + "/" + module['short_name'] + ".cpp"
 		write_if_different(file_path, wrapper_cpp, verbose)
 
+def gen_wrapper_cpp_lines_LDPC_BP_HL(module_info, the_mod):
+	types = [ "MS", "OMS", "NMS", "SPA", "LSPA"]
+	line = ""
+	for ty in types:
+		new_module_info = copy.deepcopy(module_info)
+		new_module_info["short_name"] += "_" + ty
+		line += gen_wrapper_cpp_line(new_module_info, the_mod)
+	return line
+
+
+def gen_wrapper_cpp_line(module_info, the_mod):
+	line = '\tstd::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_'
+	if module_info['has_template']:
+		line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + the_mod + '));\n'
+	else:
+		line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '(' + the_mod + '));\n'
+
+	line += '\twrappers.push_back(wrapper_' + module_info["short_name"].lower() + '.get()); \n\n'
+	return line
+
 def gen_py_aff3ct_cpp(modules, tree, mod, root_mod, cpp_content):
 	for key, value in tree.items():
 		if key in modules:
 			module_info = modules[key]
 			the_mod = mod
-			if not module_info["leaf"] and mod == root_mod:
+			if not module_info["leaf"] and mod == root_mod and mod == 'm0':
 				cpp_content += '\tpy::module_ mod_' + module_info['short_name'].lower() + " = " + mod + '.def_submodule("' +  module_info['short_name'].lower() + '");\n'
 				the_mod = 'mod_' + module_info['short_name'].lower()
-				if mod == 'm0':
-					cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Tools inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
-					cpp_content += '\t' + 'doc_m0 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
-				else:
-					cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Modules inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
-					cpp_content += '\t' + 'doc_m1 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
+				cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Tools inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
+				cpp_content += '\t' + 'doc_m0 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
+			elif mod == root_mod and mod == 'm1':
+				cpp_content += '\tpy::module_ mod_' + module_info['short_name'].lower() + " = " + mod + '.def_submodule("' +  module_info['short_name'].lower() + '");\n'
+				the_mod = 'mod_' + module_info['short_name'].lower()
+				cpp_content += '\t' + the_mod + '.doc() = ' + 'R"pbdoc(AFF3CT Modules inheritating from ' + module_info['short_name'] + '.)pbdoc";\n'
+				cpp_content += '\t' + 'doc_m1 += R"pbdoc(           ' + module_info['short_name'].lower() + '\n' + ')pbdoc";\n'
 
-			line = '\tstd::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_'
-			if module_info['has_template']:
-				line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '<>(' + the_mod + '));\n'
+			if (("Decoder_LDPC_BP_horizontal_layered" in module_info['short_name']
+			or   "Decoder_LDPC_BP_vertical_layered"   in module_info['short_name']
+			or   "Decoder_LDPC_BP_flooding"           in module_info['short_name'])
+			and ("ONMS" not in module_info['short_name'] and "Gallager" not in module_info['short_name'])):
+				cpp_content += gen_wrapper_cpp_lines_LDPC_BP_HL(module_info, the_mod)
 			else:
-				line +=  module_info["short_name"].lower() + '(new aff3ct::wrapper::Wrapper_' + module_info["short_name"] + '(' + the_mod + '));\n'
-
-			line += '\twrappers.push_back(wrapper_' + module_info["short_name"].lower() + '.get()); \n\n'
-			cpp_content += line
+				cpp_content += gen_wrapper_cpp_line(module_info, the_mod)
 
 			if not module_info["leaf"]:
 				cpp_content = gen_py_aff3ct_cpp(modules, value, the_mod, root_mod, cpp_content)
@@ -168,10 +265,26 @@ def write_py_aff3ct_hpp(modules, command_path, template_path, verbose = False):
 	file_path = command_path + "/src/py_aff3ct.hpp"
 	write_if_different(file_path, py_aff3ct_hpp, verbose)
 
+def gen_include_line_LDPC_BP_HL_hpp(module):
+	types = [ "MS", "OMS", "NMS", "SPA", "LSPA"]
+	line = ""
+	for t in types:
+		line += '#include "' + module['include_path'] + '/' + module['short_name'] + '_' + t + '.hpp"\n'
+	return line
+
+def gen_include_line_hpp(module):
+	return '#include "' + module['include_path'] + '/' + module['short_name'] + '.hpp"\n'
+
 def gen_py_aff3ct_hpp(modules):
 	hpp_content = ""
 	for _,module in modules.items():
-		hpp_content += '#include "' + module['include_path'] + '/' + module['short_name'] + '.hpp"\n'
+		if (("Decoder_LDPC_BP_horizontal_layered" in module['short_name']
+		or   "Decoder_LDPC_BP_vertical_layered"   in module['short_name']
+		or   "Decoder_LDPC_BP_flooding"           in module['short_name'])
+		and ("ONMS" not in module['short_name'] and "Gallager" not in module['short_name'])):
+			hpp_content += gen_include_line_LDPC_BP_HL_hpp(module)
+		else:
+			hpp_content += gen_include_line_hpp(module)
 	return hpp_content
 
 def write_if_different(file_path, new_content, verbose):
@@ -262,71 +375,53 @@ def is_abstract(entry):
 def has_template(entry):
 	return "templateparamlist" in entry["compounddef"].keys()
 
-def extract_type(val):
-	type_val = ""
-	is_const = False
-	is_ref   = False
-	is_ptr   = False
-	template = ""
-	has_template = False
-	container = ""
-	has_container = False
-	initial_val = val
-	if isinstance(val, dict):
-		if "#text" in val.keys():
-
-			val_text = val["#text"]
-			initial_val = val_text
-			if val["#text"].startswith("const"):
-				is_const = True
-				val_text = val_text[5:]
-
-			if val["#text"].endswith("&"):
-				is_ref = True
-				val_text = val_text[:-1:]
-
-			if val["#text"].endswith("*"):
-				is_ptr = True
-				val_text = val_text[:-1:]
-
-			val_text = val_text.replace(" ", "")
-			val_text = val_text.replace("\n", "")
-			val_text = val_text.replace("\t", "")
-			val_text = val_text.replace("\r", "")
-
-			if val_text:
-				if val_text.startswith("<") and val_text.startswith("<"):
-					has_template = True
-					template = val_text
-				else:
-					has_container = True
-					container = val_text.split("<")[0]
-					val_text = val_text[len(container)+1:-1] #Also remove <>
-
-			if is_const:
-				type_val += "const "
-
-			if has_container:
-				type_val += container + "<"
-				new_val = {"#text": val_text,
-							"ref" : val["ref"]}
-				# type_val += extract_type(new_val) + ">"
-				type_val += new_val + ">"
-			else:
-				type_val += val["ref"]["#text"]
-
-			if has_template:
-				type_val += template
-
-			if is_ptr:
-				type_val += "*"
-
-			if is_ref:
-				type_val += "&"
+def gen_parent_template(entry, parent):
+	short   = ""
+	if has_template(parent):
+		parent_templates_list = parent["compounddef"]["templateparamlist"]["param"]
+		if type(parent_templates_list) is not list:
+			parent_templates_list = [parent_templates_list]
 	else:
-		type_val = val
-	print("Initial : ", initial_val, " | new val : ", type_val)
-	return type_val
+		return short
+
+	entry_templates_list = []
+	if has_template(entry):
+		entry_templates_list = entry["compounddef"]["templateparamlist"]["param"]
+		if type(entry_templates_list) is not list:
+			entry_templates_list = [entry_templates_list]
+
+	short = "<"
+	for ptp in parent_templates_list:
+		if "defname" in ptp.keys():
+			ptp_name = ptp["defname"]
+		else:
+			ptp_name = ptp["type"].split(" ")[1]
+
+		if not "defval" in ptp.keys():
+			message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + get_short_name(entry) + " has a template without default value." + bcolors.ENDC
+			raise RuntimeError(message)
+
+		ptp_defval = ptp["defval"]
+
+		exist = False
+		for etp in entry_templates_list:
+			if "defname" in etp.keys():
+				etp_name = etp["defname"]
+			else:
+				etp_name = etp["type"].split(" ")[1]
+
+			if etp_name == ptp_name:
+				exist = True
+				break
+
+		if exist:
+			short += ptp_name + ","
+		else:
+			short += ptp_defval + ","
+
+	short = short[:-1] + ">"
+
+	return short
 
 def gen_template(entry):
 	full    = ""
@@ -345,7 +440,7 @@ def gen_template(entry):
 			if not "defval" in tp.keys():
 				message = bcolors.FAIL + "(EE) Class and children classes not wrapped. Class " + get_short_name(entry) + " has a template without default value." + bcolors.ENDC
 				raise RuntimeError(message)
-			#t = extract_type(tp["defval"])
+
 			t = tp["defval"]
 			default += t + ","
 		default = default[:-1] + ">"
@@ -370,10 +465,8 @@ def gen_template(entry):
 		full = "template <"
 		for tp in templates_list:
 			if "defname" in tp.keys():
-				#full += tp["type"] + " " + tp["defname"] + " = " + extract_type(tp["defval"]) + ","
 				full += tp["type"] + " " + tp["defname"] + " = " + tp["defval"] + ","
 			else:
-				#full += tp["type"] + " = " + extract_type(tp["defval"]) + ","
 				full += tp["type"] + " = " + tp["defval"] + ","
 		full = full[:-1] + ">"
 
@@ -393,8 +486,10 @@ def get_parent(entry, dictio, classes_list):
 
 		if val_notp in classes_list:
 			if (has_template(dictio[val_notp])):
-				tp = gen_template(dictio[val_notp])
-				return val_notp + tp["short"]
+				#tp = gen_template(dictio[val_notp])
+				#tp_str = tp["short"]
+				tp_str = gen_parent_template(entry, dictio[val_notp])
+				return val_notp + tp_str
 			else:
 				return val_notp
 		# hack for the modules...
@@ -452,7 +547,6 @@ def gen_constructors(entry, existing_tools):
 
 						type_val = ""
 						if "type" in a.keys():
-							#type_val = extract_type(a["type"])
 							type_val = a["type"]
 							# trick to skip unsupported constructors
 							if "tools::" in type_val:
@@ -463,7 +557,7 @@ def gen_constructors(entry, existing_tools):
 										tools_available = True
 										break
 								if not tools_available:
-									message = bcolors.WARNING + "(WW) Constructor not be wrapped for class '" + get_name(entry) + "' -> argument '" + name_val + "' has unknown type '" + type_val + "'." + bcolors.ENDC
+									message = bcolors.WARNING + "(WW) Constructor not wrapped for class '" + get_name(entry) + "' -> argument '" + name_val + "' has unknown type '" + type_val + "'." + bcolors.ENDC
 									print(message)
 									continue
 							# end of the trick
