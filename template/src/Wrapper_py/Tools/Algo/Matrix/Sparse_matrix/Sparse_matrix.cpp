@@ -14,7 +14,8 @@ Wrapper_Sparse_matrix
 : Wrapper_py(),
 py::class_<aff3ct::tools::Sparse_matrix>(scope, "array")
 {
-	py::module_ alist_reader = scope.def("read_from_alist", [](const std::string& path){
+	py::module_ alist = scope.def_submodule("alist");
+	alist.def("read", [](const std::string& path){
 		std::filebuf fb;
 		if (fb.open (path,std::ios::in))
 		{
@@ -22,7 +23,31 @@ py::class_<aff3ct::tools::Sparse_matrix>(scope, "array")
 			aff3ct::tools::Sparse_matrix ret = aff3ct::tools::AList::read(stream);
 			return ret;
 		}
+		else
+		{
+			std::stringstream message;
+			message << "Can't open '" + path + "' file.";
+			throw tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
+		}
 	}, py::return_value_policy::copy);
+	py::module_ qc = scope.def_submodule("qc");
+	qc.def("read", [](const std::string& path){
+		std::filebuf fb;
+		if (fb.open (path,std::ios::in))
+		{
+			std::istream stream(&fb);
+			aff3ct::tools::Sparse_matrix ret = aff3ct::tools::QC::read(stream);
+			return ret;
+		}
+		else
+		{
+			std::stringstream message;
+			message << "Can't open '" + path + "' file.";
+			throw tools::invalid_argument(__FILE__, __LINE__, __func__, message.str());
+		}
+	}, py::return_value_policy::copy);
+
+
 	scope.def("eye", [](const size_t &size, const int64_t &d){
 		aff3ct::tools::Sparse_matrix * H = new aff3ct::tools::Sparse_matrix(size, size);
 		for (size_t i = 0; i<size; i++)
