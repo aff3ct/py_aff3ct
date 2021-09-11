@@ -24,7 +24,7 @@ m  = H.shape[1]
 K  = N-m
 R  = K/N
 
-I = 10
+I = 100
 
 FE = 1000
 
@@ -42,7 +42,7 @@ sigma_vals = 1/(math.sqrt(2) * 10 ** (esn0 / 20))
 # %%
 src = aff3ct.module.source.Source_random_fast(K)
 enc = aff3ct.module.encoder.Encoder_LDPC_from_QC(K,N,H)
-dec = aff3ct.module.decoder.Decoder_LDPC_BP_horizontal_layered_MS(K,N,I,H,enc.get_info_bits_pos())
+dec = aff3ct.module.decoder.Decoder_LDPC_BP_horizontal_layered_inter_NMS(K,N,I,H,enc.get_info_bits_pos())
 mdm = aff3ct.module.modem.Modem_BPSK_fast(N)
 gen = aff3ct.tools.Gaussian_noise_generator_implem.FAST
 chn = aff3ct.module.channel.Channel_AWGN_LLR(N, gen)
