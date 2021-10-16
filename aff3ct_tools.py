@@ -483,7 +483,10 @@ def get_parent(entry, dictio, classes_list):
 			val = entry["compounddef"]["basecompoundref"][0]
 
 		val_notp = val["#text"].split("<")[0]
-
+		if "aff3ct::module::" + val_notp in classes_list:
+			val_notp = "aff3ct::module::" + val_notp
+		if "aff3ct::tools::" + val_notp in classes_list:
+			val_notp = "aff3ct::tools::" + val_notp
 		if val_notp in classes_list:
 			if (has_template(dictio[val_notp])):
 				#tp = gen_template(dictio[val_notp])

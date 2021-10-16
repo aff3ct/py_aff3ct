@@ -21,7 +21,7 @@ parser.add_argument(        "--clean", help = "Clean before doing configuration.
 parser.add_argument("--doxy-xml-path", help = "Path of the Doxygen XML files."          , default= command_path + "/lib/aff3ct/doc/build/doxygen/xml/")
 parser.add_argument("--template-path", help = "Path of the py_aff3ct *template* folder.", default= command_path + "/template")
 
-parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['Channel', 'Modem', 'Source', 'Encoder', 'Decoder', 'Iterator', 'Sink'])
+parser.add_argument( "--include-module", nargs="+", help = "List of aff3ct Modules to be wrapped. Example : --include-module Source Modem", default=['CRC','Channel', 'Modem', 'Source', 'Encoder', 'Decoder', 'Iterator', 'Sink'])
 parser.add_argument( "--exclude-module", nargs="+", help = "List of aff3ct Modules to be excluded from the wrapper. (prioritary over --include-module). Example : --exclude-module Source Modem", default=['Modem_CPM', 'Modem_OOK', 'Encoder_RSC_generic_json_sys', 'Decoder_LDPC_bit_flipping', 'Decoder_chase_pyndiah', 'Decoder_turbo_product', 'Decoder_RSC_BCJR_seq_generic_std_json', 'Reporter', 'Decoder_LDPC_BP_flooding_inter', 'Decoder_LDPC_BP_flooding_SPA', 'Decoder_LDPC_bit_flipping_hard', 'Decoder_polar_MK_SC_naive', 'Encoder_polar_MK', 'Decoder_polar_MK_SCL_naive', 'Decoder_polar_MK_SCL_naive_CA', 'Decoder_polar_MK_ASCL_naive_CA', 'Decoder_polar_MK_SCL_naive_CA_sys', 'Decoder_polar_MK_ASCL_naive_CA_sys', 'Decoder_polar_MK_SCL_naive_sys'])
 parser.add_argument( "--include-tool",   nargs="+", help = "List of aff3ct Tools to be wrapped. Example : --include-tool Constellation", default=['Constellation', 'Pattern_polar_i', 'Noise', 'BCH_polynomial_generator', 'RS_polynomial_generator', 'Polar_code','Interleaver_core'])
 parser.add_argument( "--exclude-tool",   nargs="+", help = "List of aff3ct Tools to be excluded from the wrapper. (prioritary over --include-tool). Example : --exclude-tool Constellation", default=[])
@@ -83,13 +83,14 @@ for f in doxyFiles:
 for key, value in doxygen.items():
 	if "derivedcompoundref" in value["compounddef"].keys():
 		value["compounddef"]["derivedcompoundref"] = []
+
 	for key2, value2 in doxygen.items():
 		if key != key2 and "basecompoundref" in value2["compounddef"].keys():
 			refs_list = value2["compounddef"]["basecompoundref"]
 			if type(refs_list) is not list:
 				refs_list = [refs_list]
 			for ref in refs_list:
-				if ref["#text"].split("<")[0] == key:
+				if ref["#text"].split("<")[0].replace('aff3ct::module::', '').replace('aff3ct::tools::', '') == key.replace('aff3ct::module::', '').replace('aff3ct::tools::', ''):
 					elmt = {"#text": key2}
 					if "derivedcompoundref" not in value["compounddef"].keys():
 						value["compounddef"]["derivedcompoundref"] = [elmt]
@@ -115,6 +116,7 @@ existing_tools["aff3ct::tools::Sparse_matrix"] = {}
 
 module_tree = {}
 module_classes_list = aff3ct_tools.recursive_build_classes_list(doxygen, args.include_module, args.exclude_module, "aff3ct::module::", module_tree)
+
 module = aff3ct_tools.build_modules(doxygen, command_path + "/src", "Wrapper_py", module_classes_list, existing_tools)
 
 aff3ct_tools.make_dir_tree     (module,                     args.verbose)
