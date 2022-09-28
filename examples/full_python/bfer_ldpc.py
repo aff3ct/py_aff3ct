@@ -18,13 +18,13 @@ import matplotlib.pyplot as plt
 # %%
 T = 14
 
-H = sp.qc.read("/Users/rtajan/codes/py_aff3ct_new/lib/aff3ct/conf/dec/LDPC/AR4JA_4096_8192.qc")
+H = sp.qc.read("../../lib/aff3ct/conf/dec/LDPC/AR4JA_4096_8192.qc")
 N  = H.shape[0]
 m  = H.shape[1]
 K  = N-m
 R  = K/N
 
-I = 100
+I = 10      
 
 FE = 1000
 
