@@ -36,6 +36,11 @@ void Wrapper_Task
 			self.exec(frame_id, managed_memory);
 		},
 		"frame_id"_a = -1, "managed_memory"_a = true);
+	this->def("__getitem__",  [](Task& t, const std::string& s)
+	{
+		auto& m = t.get_module();
+		return py::cast(&m[t.get_name() + "::" + s]);
+	}, py::return_value_policy::reference);
 	this->def_property("debug", &Task::is_debug, &Task::set_debug);
 	this->def_property("stats", &Task::is_stats, &Task::set_stats);
 	this->def_property("fast" , &Task::is_fast,  &Task::set_fast );
