@@ -148,8 +148,12 @@ def write_cpp_wrappers(modules, template_path, verbose = False):
 			init_lines += '\n'
 
 		def_lines = ""
+
 		if module['short_name'] == 'Encoder':
 			def_lines += '\n\tthis->def("get_info_bits_pos", &Encoder<B>::get_info_bits_pos);\n'
+		if module['short_name'] == "dvbs2_values":
+			def_lines += '\n\tthis->def("build_H", [](const aff3ct::tools::dvbs2_values & self)\n{\n\treturn aff3ct::tools::build_H(self);\n});\n'
+
 		if 'definitions' in module.keys():
 			for def_ in module['definitions']:
 				if module['short_name'] == 'Decoder' and def_['short_name'] == 'reset':
@@ -528,7 +532,6 @@ def gen_constructors(entry, existing_tools):
 		sectiondef_list = [sectiondef_list]
 
 	class_name = get_short_name(entry)
-
 	constructors = []
 	for sd in sectiondef_list:
 		if (sd["@kind"] == "public-func"):
@@ -537,11 +540,15 @@ def gen_constructors(entry, existing_tools):
 				memberdef_list = [memberdef_list]
 
 			for mb in memberdef_list:
-				if mb["name"] == class_name and "param" in mb.keys():
+				if mb["name"] == class_name:
+					if "param" not in mb.keys():
+						params_list = []
+					else:
+						params_list = mb["param"]
+						if type(params_list) is not list:
+							params_list = [params_list]
+
 					args = []
-					params_list = mb["param"]
-					if type(params_list) is not list:
-						params_list = [params_list]
 					tools_available = True
 					for a in params_list:
 						name_val = ""
@@ -573,7 +580,7 @@ def gen_constructors(entry, existing_tools):
 							"type": type_val,
 							"default": default_val
 						})
-						doc_str = extract_contructor_doc(mb)
+					doc_str = extract_contructor_doc(mb)
 					if not tools_available:
 						continue
 
