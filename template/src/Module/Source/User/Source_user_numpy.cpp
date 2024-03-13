@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief
  * @date 2024-03-13 15:12:01
- * @modified: 2024-03-13 20:19:13
+ * @modified: 2024-03-14 00:33:56
  */
 
 #include "Module/Source/User/Source_user_numpy.hpp"
@@ -13,9 +13,10 @@ using namespace aff3ct::module;
 
 template <typename B>
 Source_user_numpy<B>::Source_user_numpy(const int K, const std::vector<std::vector<B>>& input)
-    : Source<B>(K)
-    , source(input)
-    , src_counter(0)
+    : Source<B>(K),
+     source(input),
+     src_counter(0),
+     done(false)
 {
     const std::string name = "Source_user_numpy";
     this->set_name(name);
@@ -40,21 +41,21 @@ Source_user_numpy<B>::Source_user_numpy(const int K, const std::vector<std::vect
 }
 
 template <typename B>
-Source_user_numpy<B>* Source_user_numpy<B>::clone() const
+bool Source_user_numpy<B>::is_done() const
 {
-    auto m = new Source_user_numpy(*this);
-    m->deep_copy(*this);
-    return m;
+    return this->done;
 }
 
 template <typename B>
 void Source_user_numpy<B>::_generate(B* U_K, const size_t frame_id)
 {
-    if (this->src_counter == this->source.size())
-        this->src_counter = 0;
-
     std::copy(this->source[this->src_counter].begin(), this->source[this->src_counter].end(), U_K);
     this->src_counter++;
+
+    if (this->src_counter == this->source.size()) {
+        this->src_counter = 0;
+        this->done = true;
+    }
 }
 
 // ==================================================================================== explicit template instantiation
