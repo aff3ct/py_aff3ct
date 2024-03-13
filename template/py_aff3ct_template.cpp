@@ -90,6 +90,7 @@ R"pbdoc(
            monitor
            switcher
            interleaver
+		   source
 )pbdoc";
 	std::unique_ptr<wrapper::Wrapper_py> wrapper_socket       (new wrapper::Wrapper_Socket         (m1));
 	wrappers.push_back(wrapper_socket.get());
@@ -137,6 +138,10 @@ R"pbdoc(
 	wrappers.push_back(wrapper_interleaver_double.get());
 
 {other_module_wrappers}
+
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_source_user_numpy(new aff3ct::wrapper::Wrapper_Source_user_numpy<>(mod_source));
+	wrappers.push_back(wrapper_source_user_numpy.get());
+
 	m1.doc() = doc_m1.c_str();
 	for (size_t i = 0; i < wrappers.size(); i++)
 		wrappers[i]->definitions();

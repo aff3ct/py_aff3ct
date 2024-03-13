@@ -32,5 +32,6 @@
 #include "Wrapper_py/Module/Interleaver/Interleaver.hpp"
 
 {other_includes}
+#include "Wrapper_py/Module/Source/User/Source_user_numpy.hpp"
 
 #endif //PY_AFF3CT_HPP_
