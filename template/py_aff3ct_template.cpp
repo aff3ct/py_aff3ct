@@ -138,8 +138,18 @@ R"pbdoc(
 	wrappers.push_back(wrapper_interleaver_double.get());
 
 	py::module_ mod_fetcher = m1.def_submodule("fetcher");
-	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int32(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int32_t>(mod_fetcher, "int32_t"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int8(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int8_t>(mod_fetcher, "int8"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int16(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int16_t>(mod_fetcher, "int16"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int32(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int32_t>(mod_fetcher, "int32"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int64(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int64_t>(mod_fetcher, "int64"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_float(new aff3ct::wrapper::Wrapper_Fetcher_numpy<float>(mod_fetcher, "float"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_double(new aff3ct::wrapper::Wrapper_Fetcher_numpy<double>(mod_fetcher, "double"));
+	wrappers.push_back(wrapper_fetcher_numpy_int8.get());
+	wrappers.push_back(wrapper_fetcher_numpy_int16.get());
 	wrappers.push_back(wrapper_fetcher_numpy_int32.get());
+	wrappers.push_back(wrapper_fetcher_numpy_int64.get());
+	wrappers.push_back(wrapper_fetcher_numpy_float.get());
+	wrappers.push_back(wrapper_fetcher_numpy_double.get());
 
 {other_module_wrappers}
 

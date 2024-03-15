@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief 
  * @date 2024-03-14 14:58:53
- * @modified: 2024-03-15 10:39:06
+ * @modified: 2024-03-15 12:11:34
  */
 
 #include "Wrapper_py/Module/Fetcher/Fetcher_numpy.hpp"
@@ -48,4 +48,10 @@ Parameters:
 };
 
 #include "Tools/types.h"
-template class aff3ct::wrapper::Wrapper_Fetcher_numpy<int>;
+
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<int8_t>;
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<int16_t>;
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<int32_t>;
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<int64_t>;
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<float>;
+template class aff3ct::wrapper::Wrapper_Fetcher_numpy<double>;
