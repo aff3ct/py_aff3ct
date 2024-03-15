@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief
  * @date 2024-03-13 18:00:30
- * @modified: 2024-03-15 15:55:06
+ * @modified: 2024-03-15 16:31:41
  */
 
 #ifndef TUNNEL_NUMPY_HPP_
@@ -39,7 +39,7 @@ namespace module {
 
     template <typename B = int>
     class Tunnel_numpy : public Module,
-                        //   public tools::Interface_is_done,
+                          public tools::Interface_is_done,
                           public tools::Interface_reset {
     public:
         inline Task& operator[](const ftr::tsk t);
@@ -51,11 +51,12 @@ namespace module {
         const size_t K; /*!< Number of information bits in one frame */
         const size_t N; /*!< Number of frames */
         size_t counter;
+        bool is_out;
         bool append_done;
         bool get_done;
 
     public:
-        Tunnel_numpy(const int K, const int N);
+        Tunnel_numpy(const int K, const int N, const bool is_out);
 
         ~Tunnel_numpy() = default;
 
@@ -73,9 +74,7 @@ namespace module {
 
         std::vector<std::vector<B>> get_data() const;
 
-        bool is_append_done() const;
-
-        bool is_get_done() const;
+        bool is_done() const;
 
         void reset();
 
@@ -83,8 +82,6 @@ namespace module {
         void _append(B* U_K);
 
         void _get(B* U_K);
-
-        // void _get_data(B* data) const;
     };
 }
 }

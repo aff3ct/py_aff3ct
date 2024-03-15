@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief
  * @date 2024-03-13 18:00:38
- * @modified: 2024-03-15 15:53:44
+ * @modified: 2024-03-15 16:32:18
  */
 
 #include "Module/Tunnel/Tunnel_numpy.hpp"
@@ -39,13 +39,18 @@ Socket& Tunnel_numpy<B>::operator[](const ftr::sck::get s)
 }
 
 template <typename B>
-Tunnel_numpy<B>::Tunnel_numpy(const int K, const int N)
+Tunnel_numpy<B>::Tunnel_numpy(const int K, const int N, const bool is_out)
     : Module()
     , K(K)
     , N(N)
+    , is_out(is_out)
 {
     const std::string name = "Tunnel_numpy";
     this->set_name(name);
+
+    this->append_done = false;
+    this->get_done = false;
+    this->counter = 0;
 
     if (K <= 0 || N <= 0) {
         std::stringstream message;
@@ -99,6 +104,11 @@ int Tunnel_numpy<B>::get_N() const
 template <typename B>
 void Tunnel_numpy<B>::append(std::vector<B>& U_K)
 {
+    if (this->is_out) {
+        std::stringstream message;
+        message << "The tunnel is an output tunnel, you can't append data to it.";
+        throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+    }
     (*this)[ftr::sck::append::U_K].bind(U_K.data());
     (*this)[ftr::tsk::append].exec();
 }
@@ -106,6 +116,11 @@ void Tunnel_numpy<B>::append(std::vector<B>& U_K)
 template <typename B>
 void Tunnel_numpy<B>::get(std::vector<B>& U_K)
 {
+    if (!this->is_out) {
+        std::stringstream message;
+        message << "The tunnel is an input tunnel, you can't get data from it.";
+        throw tools::runtime_error(__FILE__, __LINE__, __func__, message.str());
+    }
     (*this)[ftr::sck::get::U_K].bind(U_K.data());
     (*this)[ftr::tsk::get].exec();
 }
@@ -144,26 +159,14 @@ void Tunnel_numpy<B>::_get(B* U_K)
     }
 }
 
-// template <typename B>
-// void Tunnel_numpy<B>::_get_data(B* data) const
-// {
-//     std::vector<B> data_vec;
-//     for (auto& U_K : this->data) {
-//         std::copy(U_K.begin(), U_K.end(), data_vec.end());
-//     }
-//     std::copy(data_vec.begin(), data_vec.end(), data);
-// }
-
 template <typename B>
-bool Tunnel_numpy<B>::is_append_done() const
+bool Tunnel_numpy<B>::is_done() const
 {
-    return this->append_done;
-}
-
-template <typename B>
-bool Tunnel_numpy<B>::is_get_done() const
-{
-    return this->get_done;
+    if (this->is_out) {
+        return this->get_done;
+    } else {
+        return this->append_done;
+    }
 }
 
 template <typename B>
