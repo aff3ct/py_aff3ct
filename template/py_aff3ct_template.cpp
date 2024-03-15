@@ -137,6 +137,10 @@ R"pbdoc(
 	wrappers.push_back(wrapper_interleaver_float .get());
 	wrappers.push_back(wrapper_interleaver_double.get());
 
+	py::module_ mod_fetcher = m1.def_submodule("fetcher");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_fetcher_numpy_int32(new aff3ct::wrapper::Wrapper_Fetcher_numpy<int32_t>(mod_fetcher, "int32_t"));
+	wrappers.push_back(wrapper_fetcher_numpy_int32.get());
+
 {other_module_wrappers}
 
 	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_source_user_numpy(new aff3ct::wrapper::Wrapper_Source_user_numpy<>(mod_source));

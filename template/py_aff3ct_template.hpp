@@ -30,6 +30,7 @@
 #include "Wrapper_py/Module/Monitor/Monitor_MI/Monitor_MI.hpp"
 #include "Wrapper_py/Module/Switcher/Switcher.hpp"
 #include "Wrapper_py/Module/Interleaver/Interleaver.hpp"
+#include "Wrapper_py/Module/Fetcher/Fetcher_numpy.hpp"
 
 {other_includes}
 #include "Wrapper_py/Module/Source/User/Source_user_numpy.hpp"
