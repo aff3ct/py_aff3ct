@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief
  * @date 2024-03-13 18:00:38
- * @modified: 2024-03-15 20:03:58
+ * @modified: 2024-03-15 20:14:20
  */
 
 #include "Module/Tunnel/Tunnel_numpy.hpp"
@@ -135,6 +135,12 @@ template <typename B>
 std::vector<std::vector<B>> Tunnel_numpy<B>::get_data() const
 {
     return this->data;
+}
+
+template <typename B>
+void Tunnel_numpy<B>::set_N(const int N)
+{
+    this->N = (size_t)N;
 }
 
 template <typename B>

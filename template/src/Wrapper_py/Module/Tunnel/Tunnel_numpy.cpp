@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief 
  * @date 2024-03-14 14:58:53
- * @modified: 2024-03-15 16:34:14
+ * @modified: 2024-03-15 20:13:41
  */
 
 #include "Wrapper_py/Module/Tunnel/Tunnel_numpy.hpp"
@@ -34,6 +34,7 @@ void Wrapper_Tunnel_numpy<B>
     this->def("get", &aff3ct::module::Tunnel_numpy<B>::get, R"pbdoc()pbdoc");
     this->def("set_data", &aff3ct::module::Tunnel_numpy<B>::set_data, R"pbdoc()pbdoc");
     this->def("get_data", &aff3ct::module::Tunnel_numpy<B>::get_data, R"pbdoc()pbdoc");
+    this->def("set_N", &aff3ct::module::Tunnel_numpy<B>::set_N, R"pbdoc()pbdoc");
     this->def("is_done", &aff3ct::module::Tunnel_numpy<B>::is_done, R"pbdoc()pbdoc");
     this->def("reset", &aff3ct::module::Tunnel_numpy<B>::reset, R"pbdoc()pbdoc");
     this->def_property_readonly("tasks", [](Tunnel_numpy<B>& self)-> std::vector<std::shared_ptr<Task>> { return self.tasks; },R"pbdoc(List of tasks:

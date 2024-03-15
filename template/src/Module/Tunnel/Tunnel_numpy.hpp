@@ -3,7 +3,7 @@
  * @author Sciroccogti (scirocco_gti@yeah.net)
  * @brief
  * @date 2024-03-13 18:00:30
- * @modified: 2024-03-15 16:31:41
+ * @modified: 2024-03-15 20:14:08
  */
 
 #ifndef TUNNEL_NUMPY_HPP_
@@ -39,8 +39,8 @@ namespace module {
 
     template <typename B = int>
     class Tunnel_numpy : public Module,
-                          public tools::Interface_is_done,
-                          public tools::Interface_reset {
+                         public tools::Interface_is_done,
+                         public tools::Interface_reset {
     public:
         inline Task& operator[](const ftr::tsk t);
         inline Socket& operator[](const ftr::sck::append s);
@@ -49,7 +49,7 @@ namespace module {
     protected:
         std::vector<std::vector<B>> data;
         const size_t K; /*!< Number of information bits in one frame */
-        const size_t N; /*!< Number of frames */
+        size_t N; /*!< Number of frames */
         size_t counter;
         bool is_out;
         bool append_done;
@@ -62,10 +62,6 @@ namespace module {
 
         Tunnel_numpy<B>* clone() const;
 
-        int get_K() const;
-
-        int get_N() const;
-
         void append(std::vector<B>& U_K);
 
         void get(std::vector<B>& U_K);
@@ -73,6 +69,12 @@ namespace module {
         void set_data(const std::vector<std::vector<B>>& data);
 
         std::vector<std::vector<B>> get_data() const;
+
+        void set_N(const int N);
+
+        int get_K() const;
+
+        int get_N() const;
 
         bool is_done() const;
 
