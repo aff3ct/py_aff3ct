@@ -90,6 +90,7 @@ R"pbdoc(
            monitor
            switcher
            interleaver
+		   source
 )pbdoc";
 	std::unique_ptr<wrapper::Wrapper_py> wrapper_socket       (new wrapper::Wrapper_Socket         (m1));
 	wrappers.push_back(wrapper_socket.get());
@@ -136,7 +137,22 @@ R"pbdoc(
 	wrappers.push_back(wrapper_interleaver_float .get());
 	wrappers.push_back(wrapper_interleaver_double.get());
 
+	py::module_ mod_tunnel = m1.def_submodule("tunnel");
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_int8(new aff3ct::wrapper::Wrapper_Tunnel_numpy<int8_t>(mod_tunnel, "int8"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_int16(new aff3ct::wrapper::Wrapper_Tunnel_numpy<int16_t>(mod_tunnel, "int16"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_int32(new aff3ct::wrapper::Wrapper_Tunnel_numpy<int32_t>(mod_tunnel, "int32"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_int64(new aff3ct::wrapper::Wrapper_Tunnel_numpy<int64_t>(mod_tunnel, "int64"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_float(new aff3ct::wrapper::Wrapper_Tunnel_numpy<float>(mod_tunnel, "float"));
+	std::unique_ptr<aff3ct::wrapper::Wrapper_py> wrapper_tunnel_numpy_double(new aff3ct::wrapper::Wrapper_Tunnel_numpy<double>(mod_tunnel, "double"));
+	wrappers.push_back(wrapper_tunnel_numpy_int8.get());
+	wrappers.push_back(wrapper_tunnel_numpy_int16.get());
+	wrappers.push_back(wrapper_tunnel_numpy_int32.get());
+	wrappers.push_back(wrapper_tunnel_numpy_int64.get());
+	wrappers.push_back(wrapper_tunnel_numpy_float.get());
+	wrappers.push_back(wrapper_tunnel_numpy_double.get());
+
 {other_module_wrappers}
+
 	m1.doc() = doc_m1.c_str();
 	for (size_t i = 0; i < wrappers.size(); i++)
 		wrappers[i]->definitions();
